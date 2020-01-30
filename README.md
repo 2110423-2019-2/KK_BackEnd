@@ -1,6 +1,6 @@
 # CC-BE
 
-CC-BE is a backend server stack for the project courtcatch
+CC-BE is a backend server stack for the courtcatch project.
 
 
 ## Usage
@@ -10,6 +10,6 @@ CC-BE is a backend server stack for the project courtcatch
 
 ## Avaliable Command
 
-	HTTP	/admin/ 	admin panel
+	BROWSER	/admin/ 	admin panel
 	GET	/api/users/	get extended user info
 	GET	/api/userlog/	get users' logs
