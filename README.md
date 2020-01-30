@@ -5,8 +5,8 @@ CC-BE is a backend server stack for the project courtcatch
 
 ## Usage
 
-	1) cd into the cc-be directory
-	2) run $python3 manage.py runserver
+	cd into root cc-be directory
+	$python3 manage.py runserver
 
 ## Avaliable Command
 
