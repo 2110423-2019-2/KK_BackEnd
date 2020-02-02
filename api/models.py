@@ -6,6 +6,7 @@ from django.core.validators import RegexValidator, \
 
 class ExtendedUser(models.Model):
     is_verified = models.BooleanField(default=False)
+    credit = models.IntegerField(default=0, blank=True, )
     base_user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,

@@ -2,16 +2,23 @@ from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from .serializers import *
 
 
-invalid_input = Response(
+err_invalid_input = Response(
     {'message': 'Cannot create user, please recheck input fields'},
     status=status.HTTP_400_BAD_REQUEST,
+)
+err_no_permission = Response(
+    {'message': 'You do not have permission to perform this action'},
+    status=status.HTTP_403_FORBIDDEN,
+)
+err_not_found = Response(
+    {'message': 'Not found'},
+    status=status.HTTP_404_NOT_FOUND,
 )
 
 
@@ -38,9 +45,10 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = ExtendedUser.objects.all()
     serializer_class = ExtendedUserSerializer
     authentication_classes = (TokenAuthentication, )
-    permission_classes = [IsAdminUser]
 
     def create(self, request):
+        if not request.user.is_staff:
+            return err_no_permission
         response = check_arguments(request, [
             'username',
             'password',
@@ -75,7 +83,7 @@ class UserViewSet(viewsets.ModelViewSet):
             extended_user.full_clean()
         except ValidationError:
             base_user.delete()
-            return invalid_input
+            return err_invalid_input
         Token.objects.create(user=base_user)
         create_log(user=base_user,
                    desc="User %s has been created" % base_user.username)
@@ -87,7 +95,16 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    def retrieve(self, request, pk=None):
+    def list(self, request, pk=None):
+        if not request.user.is_staff:
+            return err_no_permission
+        queryset = ExtendedUser.objects.all()
+        serializer_class = ExtendedUserSerializer
+        return Response(serializer_class(queryset, many=True).data,
+                        status=status.HTTP_200_OK)
+
+        if pk != request.user.username and not request.user.is_staff:
+            return err_no_permission
         queryset = User.objects.all()
         try:
             user = queryset.get(username=pk).extended
@@ -97,13 +114,12 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK
             )
         except:
-            return Response(
-                {'message': 'User not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return err_not_found
 
     @action(methods=['POST'], detail=True)
     def change_password(self, request, pk=None):
+        if pk != request.user.username and not request.user.is_staff:
+            return err_no_permission
         response = check_arguments(request, ['password', ])
         if response[0] != 0:
             return response[1]
@@ -125,10 +141,35 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except:
+            return err_not_found
+
+    @action(methods=['POST'], detail=True)
+    def add_credit(self, request, pk=None):
+        response = check_arguments(request, ['amount'])
+        if response[0] != 0:
+            return response[1]
+        if not request.user.is_staff:
+            return err_no_permission
+
+        amount = int(request.data['amount'])
+        if amount < 0:
             return Response(
-                {'message': 'User not found'},
-                status=status.HTTP_404_NOT_FOUND,
+                {'message': 'amount cannot be negative'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+        user = User.objects.get(username=pk)
+        user.extended.credit += amount
+        user.extended.save()
+        create_log(user=user, desc='Admin %s add %d credit to user %s'
+                                   % (request.user.username, amount, user.username))
+        serializer_class = ExtendedUserSerializer
+        return Response(
+            {
+                'message': 'credit added',
+                'result': serializer_class(user.extended, many=False).data
+            },
+            status=status.HTTP_200_OK
+        )
 
     # TODO passwordRequestForm
 
@@ -136,6 +177,30 @@ class UserViewSet(viewsets.ModelViewSet):
 class UserLogViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserLogSerializer
+    authentication_classes = (TokenAuthentication, )
+
+    def list(self, request):
+        if request.user.is_staff:
+            queryset = User.objects.all()
+            serializer_class = UserLogSerializer
+            return Response(serializer_class(queryset, many=True).data,
+                            status=status.HTTP_200_OK, )
+        try:
+            queryset = request.user.logs
+            serializer_class = LogSerializer
+            return Response(serializer_class(queryset, many=True).data,
+                            status=status.HTTP_200_OK, )
+        except:
+            return Response({'message': 'No log with your username is found'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+    def retrieve(self, request, pk=None):
+        if pk != request.user.username and not request.user.is_staff:
+            return err_no_permission
+        queryset = User.objects.get(username=pk).logs
+        serializer_class = LogSerializer
+        return Response(serializer_class(queryset, many=True).data,
+                        status=status.HTTP_200_OK)
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
@@ -178,19 +243,26 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 )
 
     def retrieve(self, request, pk=None):
-        queryset = User.objects.all()
+        if pk != request.user.username and not request.user.is_staff:
+            return err_no_permission
         try:
+            queryset = User.objects.all()
             document = queryset.get(username=pk).documents
             serializer_class = DocumentSerializer
             return Response(
-                serializer_class(document, many=False).data,
+                serializer_class(document, many=True).data,
                 status=status.HTTP_200_OK
             )
         except:
-            return Response(
-                {'message': 'User not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return err_not_found
+
+    def list(self, request):
+        if not request.user.is_staff:
+            return err_no_permission
+        queryset = User.objects.all()
+        serializer_class = UserDocumentSerializer
+        return Response(serializer_class(queryset, many=True).data,
+                        status=status.HTTP_200_OK)
 
 
 class CourtViewSet(viewsets.ModelViewSet):
@@ -209,6 +281,12 @@ class CourtViewSet(viewsets.ModelViewSet):
         score = int(request.data['score'])
         review_text = request.data['review']
 
+        if user == court.owner:
+            return Response(
+                {'message': 'You cannot rate your own court'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         try:
             review = Review.objects.get(user=user, court=court)
             review.score = score
@@ -222,7 +300,7 @@ class CourtViewSet(viewsets.ModelViewSet):
                      % (user.username, court.name,)
             )
         except ValidationError:
-            return invalid_input
+            return err_invalid_input
         except:
             review = Review.objects.create(user=user, court=court,
                                            score=score, review=review_text, )
@@ -267,3 +345,28 @@ class CourtViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_200_OK
             )
+
+    def retrieve(self, request, pk=None):
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if request.user in court.owner.ban_list and not request.user.is_staff:
+            return err_no_permission
+        serializer_class = CourtSerializer
+        return Response(serializer_class(court, many=False).data,
+                        status=status.HTTP_200_OK, )
+
+    def list(self, request):
+        if request.user.is_staff:
+            queryset = Court.objects.all()
+            serializer_class = CourtSerializer
+            return Response(serializer_class(queryset, many=True).data,
+                            status=status.HTTP_200_OK)
+
+        queryset = Court.objects.exclude(
+            owner__extended__ban_list__contains=request.user)
+        serializer_class = CourtSerializer
+        return Response(serializer_class(queryset, many=True).data,
+                        status=status.HTTP_200_OK)
+

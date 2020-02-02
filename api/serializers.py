@@ -37,7 +37,7 @@ class ExtendedUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExtendedUser
-        fields = ('base_user', 'ban_list', 'is_verified', 'phone_number', )
+        fields = ('base_user', 'ban_list', 'is_verified', 'phone_number', 'credit', )
 
 
 class RacketSerializer(serializers.ModelSerializer):
@@ -65,3 +65,11 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = ('url', 'timestamp', )
+
+
+class UserDocumentSerializer(serializers.ModelSerializer):
+    documents = DocumentSerializer(many=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'documents')
