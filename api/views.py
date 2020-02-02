@@ -43,7 +43,6 @@ def create_log(user, desc):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = ExtendedUser.objects.all()
     serializer_class = ExtendedUserSerializer
-    authentication_classes = (TokenAuthentication,)
 
     def create(self, request):
         if not request.user.is_staff:
@@ -176,7 +175,6 @@ class UserViewSet(viewsets.ModelViewSet):
 class UserLogViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserLogSerializer
-    authentication_classes = (TokenAuthentication,)
 
     def list(self, request):
         if request.user.is_staff:
@@ -205,7 +203,6 @@ class UserLogViewSet(viewsets.ModelViewSet):
 class DocumentViewSet(viewsets.ModelViewSet):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer
-    authentication_classes = (TokenAuthentication,)
 
     def create(self, request):
         response = check_arguments(request, ['url'])
@@ -269,7 +266,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
 class CourtViewSet(viewsets.ModelViewSet):
     queryset = Court.objects.all()
     serializer_class = CourtSerializer
-    authentication_classes = (TokenAuthentication,)
 
     @action(detail=True, methods=['POST'], )
     def rate_court(self, request, pk=None):
