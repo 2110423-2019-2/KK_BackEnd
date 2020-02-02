@@ -11,7 +11,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 class LogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Log
-        fields = ('desc', 'timestamp', )
+        fields = ('desc', 'timestamp',)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name',
-                  'email', 'is_staff', 'reviews', 'documents', )
+                  'email', 'is_staff', 'reviews', 'documents',)
 
 
 class UserLogSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class UserLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'logs', )
+        fields = ('username', 'logs',)
 
 
 class ExtendedUserSerializer(serializers.ModelSerializer):
@@ -37,34 +37,41 @@ class ExtendedUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExtendedUser
-        fields = ('base_user', 'ban_list', 'is_verified', 'phone_number', 'credit', )
+        fields = ('base_user', 'ban_list', 'is_verified', 'phone_number', 'credit',)
 
 
 class RacketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Racket
-        fields = ('name', 'price', 'count', )
+        fields = ('name', 'price', 'count',)
 
 
 class ShuttlecockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shuttlecock
-        fields = ('name', 'count_per_unit', 'count', )
+        fields = ('name', 'count_per_unit', 'count',)
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Image
+        fields = ('url', 'timestamp')
 
 
 class CourtSerializer(serializers.ModelSerializer):
     owner = UserSerializer(many=False)
+    images = ImageSerializer(many=True)
 
     class Meta:
         model = Court
         fields = ('id', 'name', 'price', 'owner', 'desc',
-                  'rating_count', 'avg_score', 'images', )
+                  'rating_count', 'avg_score', 'images',)
 
 
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ('url', 'timestamp', )
+        fields = ('url', 'timestamp',)
 
 
 class UserDocumentSerializer(serializers.ModelSerializer):

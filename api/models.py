@@ -146,3 +146,6 @@ class Image(models.Model):
         on_delete=models.CASCADE,
     )
     timestamp = models.DateTimeField(auto_now_add=True, blank=True, )
+
+    def __str__(self):
+        return '%s %s' % (self.court.name, self.url, )

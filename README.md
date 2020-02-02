@@ -20,8 +20,10 @@ CC-BE is a backend server stack for the courtcatch project.
 	GET	/api/log/
 	GET	/api/log/<username>/
 	GET	/api/court/
+	POST	/api/court/
 	GET	/api/court/<courtname>/
 	POST	/api/court/<courtname>/rate_court/
+	POST	/api/court/<courtname>/add_image/
 	GET	/api/document/
 	POST	/api/document/
 	GET	/api/document/<username>/

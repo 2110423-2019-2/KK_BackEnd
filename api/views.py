@@ -7,7 +7,6 @@ from rest_framework.authtoken.models import Token
 
 from .serializers import *
 
-
 err_invalid_input = Response(
     {'message': 'Cannot create user, please recheck input fields'},
     status=status.HTTP_400_BAD_REQUEST,
@@ -44,7 +43,7 @@ def create_log(user, desc):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = ExtendedUser.objects.all()
     serializer_class = ExtendedUserSerializer
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
     def create(self, request):
         if not request.user.is_staff:
@@ -177,7 +176,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class UserLogViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserLogSerializer
-    authentication_classes = (TokenAuthentication, )
+    authentication_classes = (TokenAuthentication,)
 
     def list(self, request):
         if request.user.is_staff:
@@ -227,16 +226,18 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 document.full_clean()
                 create_log(
                     user=user,
-                    desc='User %s has been created' % user.username,
+                    desc='User %s has upload a document url: %s'
+                         % (user.username, url,),
                 )
                 return Response(
                     {
-                        'message': 'A user has been created',
+                        'message': 'The document has been uploaded',
                         'result': DocumentSerializer(document, many=False).data,
                     },
                     status=status.HTTP_200_OK
                 )
             except:
+                document.delete()
                 return Response(
                     {'message': 'invalid url'},
                     status.HTTP_400_BAD_REQUEST,
@@ -277,7 +278,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             return response[1]
 
         user = request.user
-        court = Court.objects.get(id=pk)
+        court = Court.objects.get(name=pk)
         score = int(request.data['score'])
         review_text = request.data['review']
 
@@ -317,6 +318,44 @@ class CourtViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK
         )
+
+    @action(detail=True, methods=['POST'], )
+    def add_image(self, request, pk=None):
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if request.user.username != court.owner and not request.user.is_staff:
+            return err_no_permission
+        response = check_arguments(request, ['url'])
+        if response[0] != 0:
+            return response[1]
+
+        url = request.data['url']
+        try:
+            Image.objects.get(url=url)
+            return Response(
+                {'message': 'An image with the same url already exists'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except:
+            try:
+                image = Image.objects.create(url=url, court=court)
+                image.full_clean()
+                create_log(user=request.user,
+                           desc='User %s has upload an image url %s to court %s'
+                                % (request.user.username, url, court.name,))
+                serializer_class = ImageSerializer
+                return Response(
+                    {
+                        'message': 'The image has been uploaded',
+                        'result': serializer_class(image, many=False).data
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except:
+                image.delete()
+                return err_invalid_input
 
     def create(self, request):
         response = check_arguments(request, ['name', 'price', 'desc'])
@@ -369,4 +408,3 @@ class CourtViewSet(viewsets.ModelViewSet):
         serializer_class = CourtSerializer
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
-
