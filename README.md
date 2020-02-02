@@ -1,6 +1,6 @@
 # CC-BE
 
-CC-BE is a backend server stack for the courtcatch project using DJango Framework.
+CC-BE is a backend server stack for the courtcatch project using Django REST Framework.
 
 
 ## Usage
