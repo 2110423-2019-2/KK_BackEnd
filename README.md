@@ -1,6 +1,6 @@
 # CC-BE
 
-CC-BE is a backend server stack for the courtcatch project.
+CC-BE is a backend server stack for the courtcatch project using DJango Framework.
 
 
 ## Usage
@@ -9,7 +9,7 @@ CC-BE is a backend server stack for the courtcatch project.
 	$ python3 manage.py runserver
 	To authenticate, POST to /auth/ then put the token in the head as such {'Authorization': 'Token <token>'}
 
-## Avaliable Command
+## Available Command
 
 	BROWSER	/admin/
 	GET	/api/user/
