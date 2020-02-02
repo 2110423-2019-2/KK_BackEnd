@@ -12,4 +12,4 @@ CC-BE is a backend server stack for the courtcatch project.
 
 	BROWSER	/admin/ 	admin panel
 	GET	/api/users/	get extended user info
-	GET	/api/userlog/	get users' logs
+	GET	/api/log/	get users' logs

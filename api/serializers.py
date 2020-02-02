@@ -1,18 +1,26 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import ExtendedUser, Court, Log
+from .models import *
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ('review', 'score')
 
 
 class LogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Log
-        fields = ('id', 'desc', )
+        fields = ('desc', 'timestamp', )
 
 
 class UserSerializer(serializers.ModelSerializer):
+    reviews = ReviewSerializer(many=True)
+
     class Meta:
         model = User
-        fields = ('username', )
+        fields = ('username', 'first_name', 'last_name',
+                  'email', 'is_staff', 'reviews', 'documents', )
 
 
 class UserLogSerializer(serializers.ModelSerializer):
@@ -29,7 +37,19 @@ class ExtendedUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExtendedUser
-        fields = ('id', 'base_user', 'ban_list', )
+        fields = ('base_user', 'ban_list', 'is_verified', 'phone_number', )
+
+
+class RacketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Racket
+        fields = ('name', 'price', 'count', )
+
+
+class ShuttlecockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shuttlecock
+        fields = ('name', 'count_per_unit', 'count', )
 
 
 class CourtSerializer(serializers.ModelSerializer):
@@ -37,5 +57,11 @@ class CourtSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Court
-        field = ('id', 'name', 'owner', )
+        fields = ('id', 'name', 'price', 'owner', 'desc',
+                  'rating_count', 'avg_score', 'images', )
 
+
+class DocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document
+        fields = ('url', 'timestamp', )
