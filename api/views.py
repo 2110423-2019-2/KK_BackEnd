@@ -1,6 +1,5 @@
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -18,6 +17,10 @@ err_no_permission = Response(
 err_not_found = Response(
     {'message': 'Not found'},
     status=status.HTTP_404_NOT_FOUND,
+)
+err_not_allowed = Response(
+    {'message': 'Operation Not Allowed'},
+    status=status.HTTP_405_METHOD_NOT_ALLOWED
 )
 
 
@@ -93,7 +96,7 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    def list(self, request, pk=None):
+    def list(self, request):
         if not request.user.is_staff:
             return err_no_permission
         queryset = ExtendedUser.objects.all()
@@ -101,6 +104,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
 
+    def retrieve(self, request, pk=None):
         if pk != request.user.username and not request.user.is_staff:
             return err_no_permission
         queryset = User.objects.all()
@@ -172,7 +176,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # TODO passwordRequestForm
 
 
-class UserLogViewSet(viewsets.ModelViewSet):
+class LogViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserLogSerializer
 
@@ -198,6 +202,9 @@ class UserLogViewSet(viewsets.ModelViewSet):
         serializer_class = LogSerializer
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
+
+    def create(self):
+        return err_not_allowed
 
 
 class DocumentViewSet(viewsets.ModelViewSet):

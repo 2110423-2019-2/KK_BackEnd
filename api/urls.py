@@ -5,7 +5,7 @@ from .views import *
 
 router = routers.DefaultRouter()
 router.register('user', UserViewSet)
-router.register('log', UserLogViewSet)
+router.register('log', LogViewSet)
 router.register('court', CourtViewSet)
 router.register('document', DocumentViewSet)
 
