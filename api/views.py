@@ -74,7 +74,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except:
-            base_user = User.objects.create(username=username, password=password,
+            base_user = User.objects.create_user(username=username, password=password,
                                             first_name=first_name, last_name=last_name,
                                             email=email)
         try:
