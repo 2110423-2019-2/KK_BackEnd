@@ -15,8 +15,6 @@ class LogSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    reviews = ReviewSerializer(many=True)
-
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name',)

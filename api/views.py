@@ -75,8 +75,8 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         except:
             base_user = User.objects.create_user(username=username, password=password,
-                                            first_name=first_name, last_name=last_name,
-                                            email=email)
+                                                 first_name=first_name, last_name=last_name,
+                                                 email=email)
         try:
             base_user.full_clean()
             extended_user = ExtendedUser.objects.create(
@@ -393,7 +393,12 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
-        if request.user in court.owner.ban_list and not request.user.is_staff:
+        try:
+            court.owner.extended.ban_list.get(username=request.user.username)
+            return err_no_permission
+        except:
+            pass
+        if not request.user.is_staff:
             return err_no_permission
         serializer_class = CourtSerializer
         return Response(serializer_class(court, many=False).data,
