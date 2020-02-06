@@ -225,27 +225,28 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except:
-            try:
-                document = Document.objects.create(user=user, url=url)
-                document.full_clean()
-                create_log(
-                    user=user,
-                    desc='User %s has upload a document url: %s'
-                         % (user.username, url,),
-                )
-                return Response(
-                    {
-                        'message': 'The document has been uploaded',
-                        'result': DocumentSerializer(document, many=False).data,
-                    },
-                    status=status.HTTP_200_OK
-                )
-            except:
-                document.delete()
-                return Response(
-                    {'message': 'invalid url'},
-                    status.HTTP_400_BAD_REQUEST,
-                )
+            pass
+        try:
+            document = Document.objects.create(user=user, url=url)
+            document.full_clean()
+            create_log(
+                user=user,
+                desc='User %s has upload a document url: %s'
+                     % (user.username, url,),
+            )
+            return Response(
+                {
+                    'message': 'The document has been uploaded',
+                    'result': DocumentSerializer(document, many=False).data,
+                },
+                status=status.HTTP_200_OK
+            )
+        except:
+            document.delete()
+            return Response(
+                {'message': 'invalid url'},
+                status.HTTP_400_BAD_REQUEST,
+            )
 
     def retrieve(self, request, pk=None):
         if pk != request.user.username and not request.user.is_staff:
