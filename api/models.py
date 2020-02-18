@@ -40,6 +40,8 @@ class Court(models.Model):
         on_delete=models.CASCADE,
         related_name='courts',
     )
+    lat = models.FloatField()
+    long = models.FloatField()
     name = models.CharField(max_length=30)
     desc = models.CharField(max_length=200, null=True)
 

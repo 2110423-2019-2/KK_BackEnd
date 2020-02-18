@@ -24,14 +24,13 @@ err_not_allowed = Response(
 )
 
 
-def check_arguments(request, args):
+def check_arguments(request_arr, args):
     # check for missing arguments
     missing = []
     for arg in args:
-        if arg not in request.data:
+        if arg not in request_arr:
             missing.append(arg)
     if missing:
-        print(missing)
         response = {
             'Missing argument': '%s' % ', '.join(missing),
         }
@@ -50,7 +49,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def create(self, request):
         if not request.user.is_staff:
             return err_no_permission
-        response = check_arguments(request, [
+        response = check_arguments(request.data, [
             'username',
             'password',
             'first_name',
@@ -122,7 +121,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def change_password(self, request, pk=None):
         if pk != request.user.username and not request.user.is_staff:
             return err_no_permission
-        response = check_arguments(request, ['password', ])
+        response = check_arguments(request.data, ['password', ])
         if response[0] != 0:
             return response[1]
 
@@ -147,7 +146,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(methods=['POST'], detail=True)
     def add_credit(self, request, pk=None):
-        response = check_arguments(request, ['amount'])
+        response = check_arguments(request.data, ['amount'])
         if response[0] != 0:
             return response[1]
         if not request.user.is_staff:
@@ -226,7 +225,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
 
     def create(self, request):
-        response = check_arguments(request, ['url'])
+        response = check_arguments(request.data, ['url'])
         if response[0] != 0:
             return response[1]
 
@@ -291,7 +290,7 @@ class CourtViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], )
     def rate_court(self, request, pk=None):
-        response = check_arguments(request, ['score', 'review'])
+        response = check_arguments(request.data, ['score', 'review'])
         if response[0] != 0:
             return response[1]
 
@@ -345,7 +344,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             return err_not_found
         if request.user.username != court.owner and not request.user.is_staff:
             return err_no_permission
-        response = check_arguments(request, ['url'])
+        response = check_arguments(request.data, ['url'])
         if response[0] != 0:
             return response[1]
 
@@ -376,7 +375,7 @@ class CourtViewSet(viewsets.ModelViewSet):
                 return err_invalid_input
 
     def create(self, request):
-        response = check_arguments(request, ['name', 'price', 'desc'])
+        response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', ])
         if response[0] != 0:
             return response[1]
 
@@ -384,6 +383,9 @@ class CourtViewSet(viewsets.ModelViewSet):
         name = request.data['name']
         price = int(request.data['price'])
         desc = request.data['desc']
+        lat = float(request.data['lat'])
+        long = float(request.data['long'])
+
         try:
             Court.objects.get(name=name)
             return Response(
@@ -391,7 +393,8 @@ class CourtViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except:
-            court = Court.objects.create(owner=user, price=price, name=name, desc=desc, )
+            court = Court.objects.create(owner=user, price=price, name=name,
+                                         desc=desc, lat=lat, long=long, )
             create_log(
                 user=user,
                 desc='User %s create court %s' % (user.username, name,))
@@ -420,14 +423,43 @@ class CourtViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK, )
 
     def list(self, request):
-        if request.user.is_staff:
-            queryset = Court.objects.all()
-            serializer_class = CourtSerializer
-            return Response(serializer_class(queryset, many=True).data,
-                            status=status.HTTP_200_OK)
+        queryset = Court.objects.all()
 
-        queryset = Court.objects.exclude(
-            owner__extended__ban_list__contains=request.user)
+        name = request.GET.get('name', '')
+        min_rating = float(request.GET.get('rating', 0))
+        max_dist = float(request.GET.get('dist', 999))
+        lat = float(request.GET.get('lat', 0))
+        long = float(request.GET.get('long', 0))
+        sort_by = request.GET.get('sort_by', 'name')
+
+        if max_dist < 999 or sort_by == 'dist' or sort_by == '-dist':
+            response = check_arguments(request.GET, ['lat', 'long', ])
+            if response[0] != 0:
+                return response[1]
+
+        if not request.user.is_staff:
+            queryset = Court.objects.exclude(
+                owner__extended__ban_list__contains=request.user)
+
+        if name != '':
+            queryset = queryset.filter(name__contains=name)
+        if min_rating > 0:
+            queryset = [court for court in queryset if court.avg_score() >= min_rating]
+        if max_dist < 999:
+            queryset = [court for court in queryset if (court.lat-lat)**2+(court.long-long)**2 <= max_dist**2]
+
+        reverse = False
+        if sort_by[0] == '-':
+            reverse = True
+            sort_by = sort_by[1:]
+
+        if sort_by == 'dist':
+            sorted(queryset, key=lambda x: (x.lat-lat)**2+(x.long-long)**2)
+        elif sort_by == 'rating':
+            sorted(queryset, key=lambda x: x.avg_rating(), reverse=True)
+        elif sort_by == 'name':
+            sorted(queryset, key=lambda x: x.name, reverse=reverse)
+
         serializer_class = CourtSerializer
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
