@@ -173,7 +173,21 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    # TODO passwordRequestForm
+    @action(methods=['GET'], detail=True)
+    def courts(self, request, pk=None):
+        user = User.objects.get(username=pk)
+
+        court = Court.object.filter(owner=user)
+        serializer_class = CourtSerializer
+        if len(court) == 0:
+            return err_not_found
+        return Response(
+            serializer_class(court, many=True).data,
+            status=status.HTTP_200_OK
+        )
+
+
+# TODO passwordRequestForm
 
 
 class LogViewSet(viewsets.ModelViewSet):

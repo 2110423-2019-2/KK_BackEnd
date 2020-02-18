@@ -29,7 +29,7 @@ class ExtendedUser(models.Model):
         return self.base_user.username
 
     class Meta:
-        unique_together = ('base_user', )
+        unique_together = ('base_user',)
 
 
 class Court(models.Model):
@@ -56,7 +56,7 @@ class Court(models.Model):
             return 0
         for review in reviews:
             m_sum += review.score
-        return m_sum/len(reviews)
+        return m_sum / len(reviews)
 
 
 class Review(models.Model):
@@ -79,7 +79,7 @@ class Review(models.Model):
         unique_together = ('user', 'court')
 
     def __str__(self):
-        return "%s review %s" % (self.user, self.court, )
+        return "%s review %s" % (self.user, self.court,)
 
 
 class Racket(models.Model):
@@ -122,8 +122,10 @@ class Log(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, blank=True, )
 
     def __str__(self):
-        #return '%s %s' % (self.user.username, self.desc, )
-        return '%s' % (self.desc, )
+        try:
+            return '%s: %s' % (self.user.username, self.desc, )
+        except:
+            return '<Deleted>: %s' % (self.desc, )
 
 
 class Document(models.Model):
@@ -136,7 +138,7 @@ class Document(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, blank=True, )
 
     def __str__(self):
-        return '%s %s' % (self.user.username, self.url, )
+        return '%s %s' % (self.user.username, self.url,)
 
 
 class Image(models.Model):
@@ -149,4 +151,4 @@ class Image(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, blank=True, )
 
     def __str__(self):
-        return '%s %s' % (self.court.name, self.url, )
+        return '%s %s' % (self.court.name, self.url,)
