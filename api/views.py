@@ -177,7 +177,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def courts(self, request, pk=None):
         user = User.objects.get(username=pk)
 
-        court = Court.object.filter(owner=user)
+        court = Court.objects.filter(owner=user)
         serializer_class = CourtSerializer
         if len(court) == 0:
             return err_not_found
