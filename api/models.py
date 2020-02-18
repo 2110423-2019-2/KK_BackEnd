@@ -122,6 +122,7 @@ class Log(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, blank=True, )
 
     def __str__(self):
+        #return '%s %s' % (self.user.username, self.desc, )
         return '%s' % (self.desc, )
 
 
