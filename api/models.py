@@ -37,6 +37,7 @@ class ExtendedUser(models.Model):
 class Court(models.Model):
     is_verified = models.BooleanField(default=False)
     price = models.IntegerField(validators=[MinValueValidator(0), ])
+    court_count = models.IntegerField(blank=False)
     owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -62,12 +63,36 @@ class Court(models.Model):
             m_sum += review.score
         return m_sum / len(reviews)
 
+    def check_collision(self, day_of_the_week, start, end):
+        for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
+            if schedule.check_collision(start, end) == 0:
+                return 0
+        return 1
 
-class Schedule:
+    def book(self, day_of_the_week, start, end):
+        for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
+            if schedule.book(start, end) == 0:
+                return 0
+        return 1
+
+
+class Booking(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='bookings'
+    )
+    booked_date = models.DateTimeField(auto_now=True)
+    day_of_the_week = models.IntegerField()
+    start = models.IntegerField()
+    end = models.IntegerField()
+
+
+class Schedule(models.Model):
     court = models.ForeignKey(
         Court,
         on_delete=models.CASCADE,
-        related_name='schedule'
+        related_name='schedules'
     )
 
     class Day(models.IntegerChoices):
@@ -82,6 +107,7 @@ class Schedule:
     day_of_the_week = models.IntegerField(choices=Day.choices)
     status = models.IntegerField(default=0)
     last_update = models.DateTimeField(auto_now_add=True)
+    court_number = models.IntegerField(blank=False)
 
     def update(self):
         dist = datetime.now().weekday() - self.day_of_the_week
@@ -108,7 +134,7 @@ class Schedule:
         return 0
 
     class Meta:
-        unique_together = (('court', 'day_of_the_week'),)
+        unique_together = (('court', 'court_number', 'day_of_the_week'),)
 
 
 class Review(models.Model):

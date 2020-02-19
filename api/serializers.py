@@ -34,6 +34,12 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('url', 'timestamp',)
 
 
+class BookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ('day_of_the_week', 'start', 'end')
+
+
 class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
     ban_list = UserSerializer(many=True)
     username = serializers.CharField(
@@ -57,13 +63,16 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
     documents = DocumentSerializer(
         source='base_user.documents', many=True
     )
+    bookings = BookingSerializer(
+        source='base_user.bookings', many=True
+    )
 
     class Meta:
         model = ExtendedUser
         fields = ('username', 'first_name', 'last_name',
                   'email', 'ban_list', 'is_verified',
                   'phone_number', 'credit', 'is_staff',
-                  'reviews', 'documents', )
+                  'reviews', 'documents', 'bookings', )
 
 
 class RacketSerializer(serializers.ModelSerializer):
@@ -91,7 +100,7 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = ('id', 'name', 'price', 'owner', 'desc',
-                  'rating_count', 'avg_score', 'images',)
+                  'rating_count', 'avg_score', 'images', 'number_of_court')
 
 
 class UserDocumentSerializer(serializers.ModelSerializer):

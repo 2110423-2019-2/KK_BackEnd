@@ -290,12 +290,13 @@ class CourtViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], )
     def book(self, request, pk=None):
-        response = check_arguments(request.data, ['start', 'end'])
+        response = check_arguments(request.data, ['start', 'end', 'day_of_the_week'])
         if response[0] != 0:
             return response[1]
 
         start = request.data['start']
         end = request.data['end']
+        day_of_the_week = request.data['day_of_the_week']
         user = request.user
         try:
             court = Court.objects.get(name=pk)
@@ -306,16 +307,22 @@ class CourtViewSet(viewsets.ModelViewSet):
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
-        if court.check_collision(start, end) != 0:
+        if court.check_collision(day_of_the_week, start, end) != 0:
             return Response(
                 {'message': 'court is not free'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if court.book(start, end) != 0:
+        if court.book(day_of_the_week, start, end) != 0:
             return Response(
                 {'message': 'court could not be booked'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+        user.extended.credit -= court.price
+        court.owner.extended.credit += court.price
+        Booking.objects.create(user=user, day_of_the_week=day_of_the_week,
+                               start=start, end=end)
+        create_log(user=user, desc='User %s booked court %s'
+                                   % (user.username, court.name, ))
         return Response(
             {'message': 'court has been booked'},
             status=status.HTTP_200_OK,
@@ -411,7 +418,7 @@ class CourtViewSet(viewsets.ModelViewSet):
                 return err_invalid_input
 
     def create(self, request):
-        response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', ])
+        response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', 'court_count'])
         if response[0] != 0:
             return response[1]
 
@@ -421,6 +428,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         desc = request.data['desc']
         lat = float(request.data['lat'])
         long = float(request.data['long'])
+        count = int(request.data['court_count'])
 
         try:
             Court.objects.get(name=name)
@@ -430,7 +438,11 @@ class CourtViewSet(viewsets.ModelViewSet):
             )
         except:
             court = Court.objects.create(owner=user, price=price, name=name,
-                                         desc=desc, lat=lat, long=long, )
+                                         desc=desc, lat=lat, long=long, count=count, )
+            for i in range(0, count):
+                for day in range(0, 6):
+                    Schedule.objects.create(court=court, court_number=i,
+                                            day_of_the_week=day, )
             create_log(
                 user=user,
                 desc='User %s create court %s' % (user.username, name,))
