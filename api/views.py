@@ -494,7 +494,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             )
         except:
             court = Court.objects.create(owner=user, price=price, name=name,
-                                         desc=desc, lat=lat, long=long, count=count, )
+                                         desc=desc, lat=lat, long=long, court_count=count, )
             for i in range(0, count):
                 for day in range(0, 6):
                     Schedule.objects.create(court=court, court_number=i,
