@@ -312,7 +312,8 @@ class CourtViewSet(viewsets.ModelViewSet):
                 {'message': 'court is not free'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if court.book(day_of_the_week, start, end) != 0:
+        response = court.book(day_of_the_week, start, end)
+        if response[0] != 0:
             return Response(
                 {'message': 'court could not be booked'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -320,7 +321,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         user.extended.credit -= court.price
         court.owner.extended.credit += court.price
         Booking.objects.create(user=user, day_of_the_week=day_of_the_week,
-                               start=start, end=end)
+                               start=start, end=end, court_number=response[1])
         create_log(user=user, desc='User %s booked court %s'
                                    % (user.username, court.name, ))
         return Response(

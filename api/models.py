@@ -72,8 +72,8 @@ class Court(models.Model):
     def book(self, day_of_the_week, start, end):
         for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
             if schedule.book(start, end) == 0:
-                return 0
-        return 1
+                return 0, schedule.court_number
+        return 1, -1
 
 
 class Booking(models.Model):
@@ -84,6 +84,7 @@ class Booking(models.Model):
     )
     booked_date = models.DateTimeField(auto_now=True)
     day_of_the_week = models.IntegerField()
+    court_number = models.IntegerField()
     start = models.IntegerField()
     end = models.IntegerField()
 
