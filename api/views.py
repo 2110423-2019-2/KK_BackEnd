@@ -300,11 +300,42 @@ class BookingViewSet(viewsets.ModelViewSet):
             return err_not_found
         if not user.is_staff and user != booking.user:
             return err_not_allowed
-        booking.court
-        price = booking.court.price * (booking.end-booking.start+1)/2
-        # case 1: already past the date
-        effective_date = booking.booked_date + booking.day_of_the_week
-
+        price = booking.court.price * (booking.end - booking.start + 1) / 2
+        dist = timedelta(days=booking.day_of_the_week) - \
+               timedelta(days=booking.booked_date.weekday())
+        if dist < 0:
+            dist += timedelta(days=7)
+        effective_date = booking.booked_date + dist
+        effective_date.replace(hour=0, minute=0, second=0)
+        if datetime.now() > effective_date:
+            # case 1: already past the date
+            return Response(
+                {'message': 'Already past cancellation time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        booking.court.unbooked(court_number=booking.court_number,
+                               start=booking.start,
+                               end=booking.end)
+        if dist >= timedelta(days=3):
+            # case 2: at least 3 days before the date
+            refund = price
+            create_log(user=booking.user, desc='User %s got full refund' % booking.user.username)
+            response = Response(
+                {'message': 'A full refund has been processed'},
+                status=status.HTTP_200_OK
+            )
+        else:
+            # case 3: 1-2 days before the date
+            refund = price / 2
+            create_log(user=booking.user, desc='User %s got partial refund' % booking.user.username)
+            response = Response(
+                {'message': 'A partial refund has been processed'},
+                status=status.HTTP_200_OK
+            )
+        booking.user.extended.credit += refund
+        booking.court.owner.extended.credit -= refund
+        booking.delete()
+        return response
 
 
 class CourtViewSet(viewsets.ModelViewSet):
@@ -325,7 +356,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
-        price = court.price * (end-start+1)/2
+        price = court.price * (end - start + 1) / 2
         if user.extended.credit < price:
             return Response(
                 {'message': 'not enough credit'},
@@ -344,10 +375,10 @@ class CourtViewSet(viewsets.ModelViewSet):
             )
         user.extended.credit -= price
         court.owner.extended.credit += price
-        Booking.objects.create(user=user, day_of_the_week=day_of_the_week,
+        Booking.objects.create(user=user, day_of_the_week=day_of_the_week, court=court,
                                start=start, end=end, court_number=response[1])
         create_log(user=user, desc='User %s booked court %s'
-                                   % (user.username, court.name, ))
+                                   % (user.username, court.name,))
         return Response(
             {'message': 'court has been booked'},
             status=status.HTTP_200_OK,

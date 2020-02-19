@@ -89,7 +89,7 @@ class Booking(models.Model):
     )
     court = models.ForeignKey(
         Court,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name='bookings'
     )
     booked_date = models.DateTimeField(auto_now=True)
