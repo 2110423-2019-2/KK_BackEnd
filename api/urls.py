@@ -8,6 +8,7 @@ router.register('user', UserViewSet)
 router.register('log', LogViewSet)
 router.register('court', CourtViewSet)
 router.register('document', DocumentViewSet)
+router.register('booking', BookingViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
