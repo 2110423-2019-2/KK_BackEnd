@@ -284,6 +284,29 @@ class DocumentViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK)
 
 
+class BookingViewSet(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+
+    def list(self):
+        return err_not_allowed
+
+    @action(detail=True, methods=['POST'], )
+    def cancel(self, request, pk=None):
+        user = request.user
+        try:
+            booking = Booking.objects.get(id=pk)
+        except:
+            return err_not_found
+        if not user.is_staff and user != booking.user:
+            return err_not_allowed
+        booking.court
+        price = booking.court.price * (booking.end-booking.start+1)/2
+        # case 1: already past the date
+        effective_date = booking.booked_date + booking.day_of_the_week
+
+
+
 class CourtViewSet(viewsets.ModelViewSet):
     queryset = Court.objects.all()
     serializer_class = CourtSerializer
@@ -302,7 +325,8 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
-        if user.extended.credit < court.price:
+        price = court.price * (end-start+1)/2
+        if user.extended.credit < price:
             return Response(
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
@@ -318,8 +342,8 @@ class CourtViewSet(viewsets.ModelViewSet):
                 {'message': 'court could not be booked'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        user.extended.credit -= court.price
-        court.owner.extended.credit += court.price
+        user.extended.credit -= price
+        court.owner.extended.credit += price
         Booking.objects.create(user=user, day_of_the_week=day_of_the_week,
                                start=start, end=end, court_number=response[1])
         create_log(user=user, desc='User %s booked court %s'
