@@ -37,7 +37,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
-        fields = ('day_of_the_week', 'start', 'end')
+        fields = ('id', 'day_of_the_week', 'start', 'end')
 
 
 class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
