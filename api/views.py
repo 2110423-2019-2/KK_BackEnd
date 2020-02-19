@@ -289,13 +289,49 @@ class CourtViewSet(viewsets.ModelViewSet):
     serializer_class = CourtSerializer
 
     @action(detail=True, methods=['POST'], )
+    def book(self, request, pk=None):
+        response = check_arguments(request.data, ['start', 'end'])
+        if response[0] != 0:
+            return response[1]
+
+        start = request.data['start']
+        end = request.data['end']
+        user = request.user
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if user.extended.credit < court.price:
+            return Response(
+                {'message': 'not enough credit'},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+        if court.check_collision(start, end) != 0:
+            return Response(
+                {'message': 'court is not free'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if court.book(start, end) != 0:
+            return Response(
+                {'message': 'court could not be booked'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response(
+            {'message': 'court has been booked'},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['POST'], )
     def rate_court(self, request, pk=None):
         response = check_arguments(request.data, ['score', 'review'])
         if response[0] != 0:
             return response[1]
 
         user = request.user
-        court = Court.objects.get(name=pk)
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
         score = int(request.data['score'])
         review_text = request.data['review']
 
@@ -446,7 +482,8 @@ class CourtViewSet(viewsets.ModelViewSet):
         if min_rating > 0:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
         if max_dist < 999:
-            queryset = [court for court in queryset if (court.lat-lat)**2+(court.long-long)**2 <= max_dist**2]
+            queryset = [court for court in queryset if
+                        (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
 
         reverse = False
         if sort_by[0] == '-':
@@ -454,7 +491,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             sort_by = sort_by[1:]
 
         if sort_by == 'dist':
-            sorted(queryset, key=lambda x: (x.lat-lat)**2+(x.long-long)**2)
+            sorted(queryset, key=lambda x: (x.lat - lat) ** 2 + (x.long - long) ** 2)
         elif sort_by == 'rating':
             sorted(queryset, key=lambda x: x.avg_rating(), reverse=True)
         elif sort_by == 'name':

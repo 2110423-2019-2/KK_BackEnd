@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator, \
@@ -59,6 +61,54 @@ class Court(models.Model):
         for review in reviews:
             m_sum += review.score
         return m_sum / len(reviews)
+
+
+class Schedule:
+    court = models.ForeignKey(
+        Court,
+        on_delete=models.CASCADE,
+        related_name='schedule'
+    )
+
+    class Day(models.IntegerChoices):
+        Sunday = 0,
+        Monday = 1,
+        Tuesday = 2,
+        Wednesday = 3,
+        Thursday = 4,
+        Friday = 5,
+        Saturday = 6
+
+    day_of_the_week = models.IntegerField(choices=Day.choices)
+    status = models.IntegerField(default=0)
+    last_update = models.DateTimeField(auto_now_add=True)
+
+    def update(self):
+        dist = datetime.now().weekday() - self.day_of_the_week
+        if dist < 0:
+            dist += 7
+        cut_off_day = datetime.now() - timedelta(days=dist)
+        cut_off_day.replace(hour=0, minute=0, second=0)
+        if self.last_update < cut_off_day:
+            self.status = 0
+        self.last_update = datetime.now()
+
+    def check_collision(self, start, end):
+        self.update()
+        for i in range(start, end + 1):
+            if ((1 << i) & self.status) != 0:
+                return 1
+        return 0
+
+    def book(self, start, end):
+        if self.check_collision != 0:
+            return 1
+        for i in range(start, end + 1):
+            self.status |= 1 << i
+        return 0
+
+    class Meta:
+        unique_together = (('court', 'day_of_the_week'),)
 
 
 class Review(models.Model):
@@ -125,9 +175,9 @@ class Log(models.Model):
 
     def __str__(self):
         try:
-            return '%s: %s' % (self.user.username, self.desc, )
+            return '%s: %s' % (self.user.username, self.desc,)
         except:
-            return '<Deleted>: %s' % (self.desc, )
+            return '<Deleted>: %s' % (self.desc,)
 
 
 class Document(models.Model):
