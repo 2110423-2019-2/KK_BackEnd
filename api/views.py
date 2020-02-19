@@ -475,11 +475,14 @@ class CourtViewSet(viewsets.ModelViewSet):
         queryset = Court.objects.all()
 
         name = request.GET.get('name', '')
-        min_rating = float(request.GET.get('rating', 0))
-        max_dist = float(request.GET.get('dist', 999))
-        lat = float(request.GET.get('lat', 0))
-        long = float(request.GET.get('long', 0))
+        min_rating = float(request.GET.get('rating', -1))
+        max_dist = float(request.GET.get('dist', -1))
+        lat = float(request.GET.get('lat', -1))
+        long = float(request.GET.get('long', -1))
         sort_by = request.GET.get('sort_by', 'name')
+        day_of_the_week = request.GET.get('day_of_the_week', '-1')
+        start = request.GET.get('start_time', '-1')
+        end = request.GET.get('end_time', '-1')
 
         if max_dist < 999 or sort_by == 'dist' or sort_by == '-dist':
             response = check_arguments(request.GET, ['lat', 'long', ])
@@ -492,11 +495,14 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         if name != '':
             queryset = queryset.filter(name__contains=name)
-        if min_rating > 0:
+        if min_rating != -1:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
-        if max_dist < 999:
+        if max_dist != -1:
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
+        if day_of_the_week != -1 and start != -1 and end != -1:
+            queryset = [court for court in queryset if
+                        court.check_collision(day_of_the_week, start, end) == 0]
 
         reverse = False
         if sort_by[0] == '-':
