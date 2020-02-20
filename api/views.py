@@ -520,8 +520,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             return err_no_permission
         except:
             pass
-        if not request.user.is_staff:
-            return err_no_permission
+
         serializer_class = CourtSerializer
         return Response(serializer_class(court, many=False).data,
                         status=status.HTTP_200_OK, )
