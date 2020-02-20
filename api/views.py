@@ -547,6 +547,8 @@ class CourtViewSet(viewsets.ModelViewSet):
             queryset = Court.objects.exclude(
                 owner__extended__ban_list__contains=request.user)
 
+        queryset.filter(is_verified=True)
+
         if name != '':
             queryset = queryset.filter(name__contains=name)
         if min_rating != -1:

@@ -31,7 +31,7 @@ class ExtendedUser(models.Model):
         return self.base_user.username
 
     class Meta:
-        unique_together = ('base_user',)
+        unique_together = ('base_user',   )
 
 
 class Court(models.Model):
