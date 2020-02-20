@@ -70,7 +70,7 @@ class Court(models.Model):
         return 1
 
     def book(self, day_of_the_week, start, end):
-        for schedule in self.schedules.get(day_of_the_week=day_of_the_week):
+        for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
             if schedule.book(start, end) == 0:
                 return 0, schedule.court_number
         return 1, -1
