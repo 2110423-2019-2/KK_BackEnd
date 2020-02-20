@@ -70,15 +70,25 @@ class Court(models.Model):
         return 1
 
     def book(self, day_of_the_week, start, end):
-        for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
+        for schedule in self.schedules.get(day_of_the_week=day_of_the_week):
             if schedule.book(start, end) == 0:
                 return 0, schedule.court_number
         return 1, -1
+
+    def unbooked(self, day_of_the_week, start, end, court_number):
+        schedule = self.schedule.get(day_of_the_week=day_of_the_week, court_number=court_number)
+        schedule.unbooked(start, end)
+        return 0
 
 
 class Booking(models.Model):
     user = models.ForeignKey(
         User,
+        on_delete=models.CASCADE,
+        related_name='bookings'
+    )
+    court = models.ForeignKey(
+        Court,
         on_delete=models.CASCADE,
         related_name='bookings'
     )
@@ -133,6 +143,10 @@ class Schedule(models.Model):
         for i in range(start, end + 1):
             self.status |= 1 << i
         return 0
+
+    def unbooked(self, start, end):
+        for i in range(start, end + 1):
+            self.status ^= 1 << i
 
     class Meta:
         unique_together = (('court', 'court_number', 'day_of_the_week'),)

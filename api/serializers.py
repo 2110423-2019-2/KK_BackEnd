@@ -100,7 +100,7 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = ('id', 'name', 'price', 'owner', 'desc',
-                  'rating_count', 'avg_score', 'images', 'number_of_court')
+                  'rating_count', 'avg_score', 'images', 'court_count', 'is_verified')
 
 
 class UserDocumentSerializer(serializers.ModelSerializer):

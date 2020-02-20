@@ -284,6 +284,60 @@ class DocumentViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK)
 
 
+class BookingViewSet(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+
+    def list(self):
+        return err_not_allowed
+
+    @action(detail=True, methods=['POST'], )
+    def cancel(self, request, pk=None):
+        user = request.user
+        try:
+            booking = Booking.objects.get(id=pk)
+        except:
+            return err_not_found
+        if not user.is_staff and user != booking.user:
+            return err_not_allowed
+        price = booking.court.price * (booking.end - booking.start + 1) / 2
+        dist = timedelta(days=booking.day_of_the_week) - \
+               timedelta(days=booking.booked_date.weekday())
+        if dist < 0:
+            dist += timedelta(days=7)
+        effective_date = booking.booked_date + dist
+        effective_date.replace(hour=0, minute=0, second=0)
+        if datetime.now() > effective_date:
+            # case 1: already past the date
+            return Response(
+                {'message': 'Already past cancellation time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        booking.court.unbooked(court_number=booking.court_number,
+                               start=booking.start,
+                               end=booking.end)
+        if dist >= timedelta(days=3):
+            # case 2: at least 3 days before the date
+            refund = price
+            create_log(user=booking.user, desc='User %s got full refund' % booking.user.username)
+            response = Response(
+                {'message': 'A full refund has been processed'},
+                status=status.HTTP_200_OK
+            )
+        else:
+            # case 3: 1-2 days before the date
+            refund = price / 2
+            create_log(user=booking.user, desc='User %s got partial refund' % booking.user.username)
+            response = Response(
+                {'message': 'A partial refund has been processed'},
+                status=status.HTTP_200_OK
+            )
+        booking.user.extended.credit += refund
+        booking.court.owner.extended.credit -= refund
+        booking.delete()
+        return response
+
+
 class CourtViewSet(viewsets.ModelViewSet):
     queryset = Court.objects.all()
     serializer_class = CourtSerializer
@@ -302,7 +356,8 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
-        if user.extended.credit < court.price:
+        price = court.price * (end - start + 1) / 2
+        if user.extended.credit < price:
             return Response(
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
@@ -318,12 +373,12 @@ class CourtViewSet(viewsets.ModelViewSet):
                 {'message': 'court could not be booked'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        user.extended.credit -= court.price
-        court.owner.extended.credit += court.price
-        Booking.objects.create(user=user, day_of_the_week=day_of_the_week,
+        user.extended.credit -= price
+        court.owner.extended.credit += price
+        Booking.objects.create(user=user, day_of_the_week=day_of_the_week, court=court,
                                start=start, end=end, court_number=response[1])
         create_log(user=user, desc='User %s booked court %s'
-                                   % (user.username, court.name, ))
+                                   % (user.username, court.name,))
         return Response(
             {'message': 'court has been booked'},
             status=status.HTTP_200_OK,
@@ -439,7 +494,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             )
         except:
             court = Court.objects.create(owner=user, price=price, name=name,
-                                         desc=desc, lat=lat, long=long, count=count, )
+                                         desc=desc, lat=lat, long=long, court_count=count, )
             for i in range(0, count):
                 for day in range(0, 6):
                     Schedule.objects.create(court=court, court_number=i,
@@ -475,11 +530,14 @@ class CourtViewSet(viewsets.ModelViewSet):
         queryset = Court.objects.all()
 
         name = request.GET.get('name', '')
-        min_rating = float(request.GET.get('rating', 0))
-        max_dist = float(request.GET.get('dist', 999))
-        lat = float(request.GET.get('lat', 0))
-        long = float(request.GET.get('long', 0))
+        min_rating = float(request.GET.get('rating', -1))
+        max_dist = float(request.GET.get('dist', -1))
+        lat = float(request.GET.get('lat', -1))
+        long = float(request.GET.get('long', -1))
         sort_by = request.GET.get('sort_by', 'name')
+        day_of_the_week = request.GET.get('day_of_the_week', '-1')
+        start = request.GET.get('start_time', '-1')
+        end = request.GET.get('end_time', '-1')
 
         if max_dist < 999 or sort_by == 'dist' or sort_by == '-dist':
             response = check_arguments(request.GET, ['lat', 'long', ])
@@ -492,11 +550,14 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         if name != '':
             queryset = queryset.filter(name__contains=name)
-        if min_rating > 0:
+        if min_rating != -1:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
-        if max_dist < 999:
+        if max_dist != -1:
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
+        if day_of_the_week != -1 and start != -1 and end != -1:
+            queryset = [court for court in queryset if
+                        court.check_collision(day_of_the_week, start, end) == 0]
 
         reverse = False
         if sort_by[0] == '-':
