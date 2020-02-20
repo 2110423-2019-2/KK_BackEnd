@@ -2,12 +2,15 @@
 
 CC-BE is a backend server stack for the courtcatch project using Django REST Framework.
 
+## Dependencies Installation
+	
+	$ pip3 install django
+	$ pip3 install djangorestframework
+	$ pip3 install django-cors-headers
 
 ## Usage
 
 	cd into root cc-be directory
-	$ pip3 install django
-	$ pip3 install djangorestframework
 	$ python3 manage.py runserver
 	To authenticate, POST to /auth/ then put the token in the header as such {'Authorization': 'Token <token>'}
 
