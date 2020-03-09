@@ -97,6 +97,7 @@ class Booking(models.Model):
     court_number = models.IntegerField()
     start = models.IntegerField()
     end = models.IntegerField()
+    price = models.IntegerField(validators=[MinValueValidator(0), ])
 
 
 class Schedule(models.Model):
@@ -194,6 +195,7 @@ class Shuttlecock(models.Model):
     count_per_unit = models.IntegerField(validators=[MinValueValidator(0), ])
     count = models.IntegerField(validators=[MinValueValidator(0), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
+    remaining = models.IntegerField()
     court = models.ForeignKey(
         Court,
         related_name='shuttlecocks',
@@ -245,3 +247,19 @@ class Image(models.Model):
 
     def __str__(self):
         return '%s %s' % (self.court.name, self.url,)
+
+
+class ReserveRacket(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reserveRacket'
+    )
+    racket = models.ForeignKey(
+        Racket,
+        on_delete=models.CASCADE,
+        related_name='reserveRacket'
+    )
+    reserve_date = models.DateTimeField(auto_now=True)
+    start = models.IntegerField()
+    end = models.IntegerField()
