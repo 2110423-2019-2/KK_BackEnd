@@ -37,7 +37,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
-        fields = ('id', 'day_of_the_week', 'start', 'end')
+        fields = ('id', 'day_of_the_week','price', 'start', 'end')
 
 
 class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
@@ -84,7 +84,7 @@ class RacketSerializer(serializers.ModelSerializer):
 class ShuttlecockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shuttlecock
-        fields = ('name', 'count_per_unit', 'count',)
+        fields = ('name', 'count_per_unit', 'count')
 
 
 class ImageSerializer(serializers.ModelSerializer):
