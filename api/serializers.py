@@ -76,6 +76,7 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class RacketSerializer(serializers.ModelSerializer):
+    court = CourtSerializer(many=True)
     class Meta:
         model = Racket
         fields = ('name', 'price', 'count',)
