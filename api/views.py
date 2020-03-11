@@ -348,9 +348,9 @@ class CourtViewSet(viewsets.ModelViewSet):
         if response[0] != 0:
             return response[1]
 
-        start = request.data['start']
-        end = request.data['end']
-        day_of_the_week = request.data['day_of_the_week']
+        start = float(request.data['start'])
+        end = float(request.data['end'])
+        day_of_the_week = float(request.data['day_of_the_week'])
         user = request.user
         try:
             court = Court.objects.get(name=pk)
@@ -534,32 +534,34 @@ class CourtViewSet(viewsets.ModelViewSet):
         lat = float(request.GET.get('lat', -1))
         long = float(request.GET.get('long', -1))
         sort_by = request.GET.get('sort_by', 'name')
-        day_of_the_week = request.GET.get('day_of_the_week', '-1')
-        start = request.GET.get('start_time', '-1')
-        end = request.GET.get('end_time', '-1')
+        day_of_the_week = request.GET.get('day_of_the_week', -1)
+        start = request.GET.get('start_time', -1)
+        end = request.GET.get('end_time', -1)
 
-        if max_dist < 999 or sort_by == 'dist' or sort_by == '-dist':
+        if max_dist > -1 or sort_by == 'dist' or sort_by == '-dist':
             response = check_arguments(request.GET, ['lat', 'long', ])
             if response[0] != 0:
                 return response[1]
 
-        if not request.user.is_staff:
-            queryset = Court.objects.exclude(
-                owner__extended__ban_list__contains=request.user)
+        # if not request.user.is_staff:
+        #     queryset = Court.objects.exclude(
+        #         owner__extended__ban_list__contains=request.user)
 
-        queryset.filter(is_verified=True)
-
+        queryset = queryset.filter(is_verified=True)
+        
         if name != '':
             queryset = queryset.filter(name__contains=name)
+        
         if min_rating != -1:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
+        
         if max_dist != -1:
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
+        
         if day_of_the_week != -1 and start != -1 and end != -1:
             queryset = [court for court in queryset if
                         court.check_collision(day_of_the_week, start, end) == 0]
-
         reverse = False
         if sort_by[0] == '-':
             reverse = True
@@ -624,6 +626,13 @@ class RacketViewSet(viewsets.ModelViewSet):
 class ShuttlecockViewSet(viewsets.ModelViewSet):
     queryset = Shuttlecock.objects.all()
     serializer_class = ShuttlecockSerializer
+
+    def list(self, request):
+        queryset = Shuttlecock.objects.all()
+        serializer_class = ShuttlecockSerializer
+        return Response(serializer_class(queryset, many=True).data,
+                        status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['POST'], )
     def buy(self, request, pk=None):
         response = check_arguments(request.data, ['name', 'count_per_unit', 'count'])
