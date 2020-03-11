@@ -102,9 +102,8 @@ class UserDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'documents')
-        
+
 class RacketSerializer(serializers.ModelSerializer):
-    court = CourtSerializer(many=True)
     class Meta:
         model = Racket
         fields = ('name', 'price', 'count',)
