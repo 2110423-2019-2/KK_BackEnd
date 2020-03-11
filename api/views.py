@@ -348,9 +348,9 @@ class CourtViewSet(viewsets.ModelViewSet):
         if response[0] != 0:
             return response[1]
 
-        start = float(request.data['start'])
-        end = float(request.data['end'])
-        day_of_the_week = float(request.data['day_of_the_week'])
+        start = int(request.data['start'])
+        end = int(request.data['end'])
+        day_of_the_week = int(request.data['day_of_the_week'])
         user = request.user
         try:
             court = Court.objects.get(name=pk)

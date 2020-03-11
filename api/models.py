@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -127,6 +128,7 @@ class Schedule(models.Model):
             dist += 7
         cut_off_day = datetime.now() - timedelta(days=dist)
         cut_off_day.replace(hour=0, minute=0, second=0)
+        cut_off_day = timezone.make_aware(cut_off_day, timezone.get_default_timezone())
         if self.last_update < cut_off_day:
             self.status = 0
         self.last_update = datetime.now()
