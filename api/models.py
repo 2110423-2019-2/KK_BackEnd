@@ -261,4 +261,9 @@ class ReserveRacket(models.Model):
         related_name='reserveRacket'
     )
     reserve_date = models.DateTimeField(auto_now=True)
+
     count = models.IntegerField(validators=[MinValueValidator(0), ])
+
+    start = models.IntegerField()
+    end = models.IntegerField()
+

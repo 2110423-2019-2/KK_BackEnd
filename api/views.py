@@ -300,7 +300,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return err_not_found
         if not user.is_staff and user != booking.user:
             return err_not_allowed
-        price = booking.court.price * (booking.end - booking.start + 1) / 2
+        price = booking.price
         dist = timedelta(days=booking.day_of_the_week) - \
                timedelta(days=booking.booked_date.weekday())
         if dist < 0:
@@ -376,7 +376,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         user.extended.credit -= price
         court.owner.extended.credit += price
         Booking.objects.create(user=user, day_of_the_week=day_of_the_week, court=court,
-                               start=start, end=end, court_number=response[1])
+                               start=start, end=end, court_number=response[1], price=price)
         create_log(user=user, desc='User %s booked court %s'
                                    % (user.username, court.name,))
         return Response(
@@ -599,6 +599,7 @@ class RacketViewSet(viewsets.ModelViewSet):
         user = request.user
         try:
             court = Court.objects.get(name=pk)
+
         except:
             return err_not_found
         if user.extended.credit < price:
@@ -609,8 +610,7 @@ class RacketViewSet(viewsets.ModelViewSet):
         if count <=0:
             return Response({'message': 'not have racket'},
                 status=status.HTTP_400_BAD_REQUEST,
-            )
-       
+            )       
         user.extended.credit -= price
         court.owner.extended.credit += price
         ReserveRacket.objects.create(user=user, racket=court.racket, price=price,count = count)
@@ -655,5 +655,21 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
                                    % (user.username,count))
         return Response(
             {'message': 'shuttlecock has been bought'},
+            status=status.HTTP_200_OK,
+        )
+        response = court.book(day_of_the_week, start, end)
+        if response[0] != 0:
+            return Response(
+                {'message': 'court could not be booked'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        user.extended.credit -= price
+        court.owner.extended.credit += price
+        ReserveRacket.objects.create(user=user, racket=racket, start=start,
+                                end=end, price=price)
+        create_log(user=user, desc='User %s Reserved Racket %s'
+                                   % (user.username, racket.name,))
+        return Response(
+            {'message': 'court has been booked'},
             status=status.HTTP_200_OK,
         )
