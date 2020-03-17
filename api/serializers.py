@@ -74,13 +74,6 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
                   'phone_number', 'credit', 'is_staff',
                   'reviews', 'documents', 'bookings', )
 
-
-class RacketSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Racket
-        fields = ('name', 'price', 'count',)
-
-
 class ShuttlecockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shuttlecock
@@ -109,3 +102,8 @@ class UserDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'documents')
+
+class RacketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Racket
+        fields = ('name', 'price', 'count',)
