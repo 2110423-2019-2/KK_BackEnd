@@ -575,24 +575,31 @@ class CourtViewSet(viewsets.ModelViewSet):
         serializer_class = CourtSerializer
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
+
+
 class RacketViewSet(viewsets.ModelViewSet):
     queryset = Racket.objects.all()
-    serializer_class =RacketSerializer
+    serializer_class = RacketSerializer
+
+    def list(self, request):
+        queryset = Racket.objects.all()
+        serializer_class = RacketSerializer
+        return Response(serializer_class(queryset, many=True).data,
+                        status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['POST'], )
     def reserve(self, request, pk=None):
-        response = check_arguments(request.data, ['name', 'price', 'count','start','end'])
+        response = check_arguments(request.data, ['name', 'price', 'count'])
         if response[0] != 0:
             return response[1]
-
+        
         name = request.data['name']
         price = request.data['price']
         count = request.data['count']
-        start = request.data['start']
-        end = request.data['end']
         user = request.user
         try:
-            racket = Racket.objects.get(name=pk)
+            court = Court.objects.get(name=pk)
+
         except:
             return err_not_found
         if user.extended.credit < price:
@@ -603,7 +610,53 @@ class RacketViewSet(viewsets.ModelViewSet):
         if count <=0:
             return Response({'message': 'not have racket'},
                 status=status.HTTP_400_BAD_REQUEST,
+            )       
+        user.extended.credit -= price
+        court.owner.extended.credit += price
+        ReserveRacket.objects.create(user=user, racket=court.racket, price=price,count = count)
+        create_log(user=user, desc='User %s Reserved Racket %s'
+                                   % (user.username, court.racket.name,))
+        return Response(
+            {'message': 'racket has been reserved'},
+            status=status.HTTP_200_OK,
+        )
+
+class ShuttlecockViewSet(viewsets.ModelViewSet):
+    queryset = Shuttlecock.objects.all()
+    serializer_class = ShuttlecockSerializer
+    @action(detail=True, methods=['POST'], )
+    def buy(self, request, pk=None):
+        response = check_arguments(request.data, ['name', 'count_per_unit', 'count'])
+        if response[0] != 0:
+            return response[1]
+
+        name = request.data['name']
+        count_per_unit = request.data['count_per_unit']
+        count = request.data['count']
+        price = count*count_per_unit
+        user = request.user
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if user.extended.credit < price:
+            return Response(
+                {'message': 'not enough credit'},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
             )
+        if court.Shuttlecock.remaining-count <=0:
+            return Response({'message': 'not enough shuttlecock'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.extended.credit -= price
+        court.Shuttlecock.remaining -= count
+        court.owner.extended.credit += price
+        create_log(user=user, desc='User %s Buy Shuttlecock %s '
+                                   % (user.username,count))
+        return Response(
+            {'message': 'shuttlecock has been bought'},
+            status=status.HTTP_200_OK,
+        )
         response = court.book(day_of_the_week, start, end)
         if response[0] != 0:
             return Response(

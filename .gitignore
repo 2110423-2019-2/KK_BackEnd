@@ -3,3 +3,4 @@
 vscode/
 Pipfile
 Pipfile.lock
+api/pycache/*
