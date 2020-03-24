@@ -626,11 +626,10 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
     serializer_class = ShuttlecockSerializer
     @action(detail=True, methods=['POST'], )
     def buy(self, request, pk=None):
-        response = check_arguments(request.data, ['name', 'count_per_unit', 'count'])
+        response = check_arguments(request.data, [ 'count_per_unit', 'count'])
         if response[0] != 0:
             return response[1]
 
-        name = request.data['name']
         count_per_unit = request.data['count_per_unit']
         count = request.data['count']
         price = count*count_per_unit
@@ -657,7 +656,6 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
             {'message': 'shuttlecock has been bought'},
             status=status.HTTP_200_OK,
         )
-        response = court.book(day_of_the_week, start, end)
         if response[0] != 0:
             return Response(
                 {'message': 'court could not be booked'},
@@ -665,10 +663,8 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
             )
         user.extended.credit -= price
         court.owner.extended.credit += price
-        ReserveRacket.objects.create(user=user, racket=racket, start=start,
-                                end=end, price=price)
-        create_log(user=user, desc='User %s Reserved Racket %s'
-                                   % (user.username, racket.name,))
+        create_log(user=user, desc='User %s buy %s shuttlecock'
+                                   % (user.username, count,))
         return Response(
             {'message': 'court has been booked'},
             status=status.HTTP_200_OK,
