@@ -12,6 +12,9 @@ CC-BE is a backend server stack for the courtcatch project using Django REST Fra
 
 	cd into root cc-be directory
 	$ python3 manage.py runserver
+	// Run once then migrate to init the db
+	$ python3 manage.py migrate
+	$ python3 manage.py runserver
 	To authenticate, POST to /auth/ then put the token in the header as such {'Authorization': 'Token <token>'}
 	To create a admin account, use the command: python3 manage.py createsuperuser
 
