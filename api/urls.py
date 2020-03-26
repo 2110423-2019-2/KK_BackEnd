@@ -3,7 +3,7 @@ from django.conf.urls import include
 from rest_framework import routers
 from .views import *
 
-router = routers.DefaultRouter()
+router = routers.SimpleRouter()
 router.register('user', UserViewSet)
 router.register('log', LogViewSet)
 router.register('court', CourtViewSet)
