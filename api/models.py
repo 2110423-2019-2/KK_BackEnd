@@ -141,15 +141,20 @@ class Schedule(models.Model):
         return 0
 
     def book(self, start, end):
-        if self.check_collision != 0:
+        if self.check_collision(start, end) != 0:
             return 1
         for i in range(start, end + 1):
             self.status |= 1 << i
+        self.save()
         return 0
 
     def unbooked(self, start, end):
         for i in range(start, end + 1):
             self.status ^= 1 << i
+
+    def __str__(self):
+        return "%s of court %s in %s" % \
+               (self.day_of_the_week, self.court_number, self.court)
 
     class Meta:
         unique_together = (('court', 'court_number', 'day_of_the_week'),)
