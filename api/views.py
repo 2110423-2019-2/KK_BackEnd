@@ -543,22 +543,22 @@ class CourtViewSet(viewsets.ModelViewSet):
             if response[0] != 0:
                 return response[1]
 
-        # if not request.user.is_staff:
-        #     queryset = Court.objects.exclude(
-        #         owner__extended__ban_list__contains=request.user)
+        if not request.user.is_staff:
+            queryset = Court.objects.exclude(
+                owner__extended__ban_list__contains=request.user)
 
         queryset = queryset.filter(is_verified=True)
-        
+
         if name != '':
             queryset = queryset.filter(name__contains=name)
-        
+
         if min_rating != -1:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
-        
+
         if max_dist != -1:
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
-        
+
         if day_of_the_week != -1 and start != -1 and end != -1:
             queryset = [court for court in queryset if
                         court.check_collision(day_of_the_week, start, end) == 0]
@@ -594,7 +594,7 @@ class RacketViewSet(viewsets.ModelViewSet):
         response = check_arguments(request.data, ['name', 'price', 'count'])
         if response[0] != 0:
             return response[1]
-        
+
         name = request.data['name']
         price = request.data['price']
         count = request.data['count']
@@ -609,13 +609,13 @@ class RacketViewSet(viewsets.ModelViewSet):
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
-        if count <=0:
+        if count <= 0:
             return Response({'message': 'not have racket'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )       
+                            status=status.HTTP_400_BAD_REQUEST,
+                            )
         user.extended.credit -= price
         court.owner.extended.credit += price
-        ReserveRacket.objects.create(user=user, racket=court.racket, price=price,count = count)
+        ReserveRacket.objects.create(user=user, racket=court.racket, price=price, count=count)
         create_log(user=user, desc='User %s Reserved Racket %s'
                                    % (user.username, court.racket.name,))
         return Response(
@@ -636,13 +636,13 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], )
     def buy(self, request, pk=None):
-        response = check_arguments(request.data, [ 'count_per_unit', 'count'])
+        response = check_arguments(request.data, ['count_per_unit', 'count'])
         if response[0] != 0:
             return response[1]
 
         count_per_unit = request.data['count_per_unit']
         count = request.data['count']
-        price = count*count_per_unit
+        price = count * count_per_unit
         user = request.user
         try:
             court = Court.objects.get(name=pk)
@@ -653,15 +653,15 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
-        if court.Shuttlecock.remaining-count <=0:
+        if court.Shuttlecock.remaining - count <= 0:
             return Response({'message': 'not enough shuttlecock'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                            status=status.HTTP_400_BAD_REQUEST,
+                            )
         user.extended.credit -= price
         court.Shuttlecock.remaining -= count
         court.owner.extended.credit += price
         create_log(user=user, desc='User %s Buy Shuttlecock %s '
-                                   % (user.username,count))
+                                   % (user.username, count))
         return Response(
             {'message': 'shuttlecock has been bought'},
             status=status.HTTP_200_OK,
