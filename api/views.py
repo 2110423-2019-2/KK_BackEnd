@@ -303,7 +303,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         price = booking.price
         dist = timedelta(days=booking.day_of_the_week) - \
                timedelta(days=booking.booked_date.weekday())
-        if dist < timedelta(seconds=0):
+        if dist < timedelta(days=0):
             dist += timedelta(days=7)
         effective_date = booking.booked_date + dist
         effective_date.replace(hour=0, minute=0, second=0)
