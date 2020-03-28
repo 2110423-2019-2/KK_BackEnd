@@ -303,11 +303,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         price = booking.price
         dist = timedelta(days=booking.day_of_the_week) - \
                timedelta(days=booking.booked_date.weekday())
-        if dist < 0:
+        if dist < timedelta(seconds=0):
             dist += timedelta(days=7)
         effective_date = booking.booked_date + dist
         effective_date.replace(hour=0, minute=0, second=0)
-        if datetime.now() > effective_date:
+        if timezone.now() > effective_date:
             # case 1: already past the date
             return Response(
                 {'message': 'Already past cancellation time'},
@@ -315,7 +315,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
         booking.court.unbooked(court_number=booking.court_number,
                                start=booking.start,
-                               end=booking.end)
+                               end=booking.end,
+                               day_of_the_week=booking.day_of_the_week)
         if dist >= timedelta(days=3):
             # case 2: at least 3 days before the date
             refund = price

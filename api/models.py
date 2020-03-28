@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator, \
     MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 
 class ExtendedUser(models.Model):
@@ -77,7 +78,7 @@ class Court(models.Model):
         return 1, -1
 
     def unbooked(self, day_of_the_week, start, end, court_number):
-        schedule = self.schedule.get(day_of_the_week=day_of_the_week, court_number=court_number)
+        schedule = self.schedules.get(day_of_the_week=day_of_the_week, court_number=court_number)
         schedule.unbooked(start, end)
         return 0
 
@@ -123,15 +124,15 @@ class Schedule(models.Model):
     court_number = models.IntegerField(blank=False)
 
     def update(self):
-        dist = datetime.now().weekday() - self.day_of_the_week
+        dist = timezone.now().weekday() - self.day_of_the_week
         if dist < 0:
             dist += 7
-        cut_off_day = datetime.now() - timedelta(days=dist)
+        cut_off_day = timezone.now() - timedelta(days=dist)
         cut_off_day.replace(hour=0, minute=0, second=0)
         cut_off_day = timezone.make_aware(cut_off_day, timezone.get_default_timezone())
         if self.last_update < cut_off_day:
             self.status = 0
-        self.last_update = datetime.now()
+        self.last_update = timezone.now()
 
     def check_collision(self, start, end):
         self.update()
@@ -150,7 +151,7 @@ class Schedule(models.Model):
 
     def unbooked(self, start, end):
         for i in range(start, end + 1):
-            self.status ^= 1 << i
+            self.status ^= (1 << i)
 
     def __str__(self):
         return "%s of court %s in %s" % \
