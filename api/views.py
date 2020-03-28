@@ -302,12 +302,12 @@ class BookingViewSet(viewsets.ModelViewSet):
             return err_not_allowed
         price = booking.price
         dist = timedelta(days=booking.day_of_the_week) - \
-               timedelta(days=booking.booked_date.weekday())
+               timedelta(days=timezone.localtime(timezone.now()).weekday())
         if dist < timedelta(days=0):
             dist += timedelta(days=7)
         effective_date = booking.booked_date + dist
         effective_date.replace(hour=0, minute=0, second=0)
-        if timezone.now() > effective_date:
+        if timezone.localtime(timezone.now()) > effective_date:
             # case 1: already past the date
             return Response(
                 {'message': 'Already past cancellation time'},
@@ -497,7 +497,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.create(owner=user, price=price, name=name,
                                          desc=desc, lat=lat, long=long, court_count=count, )
             for i in range(0, count):
-                for day in range(0, 6):
+                for day in range(0, 7):
                     Schedule.objects.create(court=court, court_number=i,
                                             day_of_the_week=day, )
             create_log(

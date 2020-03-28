@@ -33,7 +33,7 @@ class ExtendedUser(models.Model):
         return self.base_user.username
 
     class Meta:
-        unique_together = ('base_user',   )
+        unique_together = ('base_user',)
 
 
 class Court(models.Model):
@@ -110,13 +110,13 @@ class Schedule(models.Model):
     )
 
     class Day(models.IntegerChoices):
-        Sunday = 0,
-        Monday = 1,
-        Tuesday = 2,
-        Wednesday = 3,
-        Thursday = 4,
-        Friday = 5,
-        Saturday = 6
+        Monday = 0,
+        Tuesday = 1,
+        Wednesday = 2,
+        Thursday = 3,
+        Friday = 4,
+        Saturday = 5,
+        Sunday = 6
 
     day_of_the_week = models.IntegerField(choices=Day.choices)
     status = models.IntegerField(default=0)
@@ -124,15 +124,16 @@ class Schedule(models.Model):
     court_number = models.IntegerField(blank=False)
 
     def update(self):
-        dist = timezone.now().weekday() - self.day_of_the_week
+        dist = timezone.localtime(timezone.now()).weekday() \
+               - self.day_of_the_week
         if dist < 0:
             dist += 7
-        cut_off_day = timezone.now() - timedelta(days=dist)
+        cut_off_day = timezone.localtime(timezone.now()) \
+                      - timedelta(days=dist)
         cut_off_day.replace(hour=0, minute=0, second=0)
-        cut_off_day = timezone.make_aware(cut_off_day, timezone.get_default_timezone())
         if self.last_update < cut_off_day:
             self.status = 0
-        self.last_update = timezone.now()
+        self.last_update = timezone.localtime(timezone.now())
 
     def check_collision(self, start, end):
         self.update()
@@ -151,7 +152,9 @@ class Schedule(models.Model):
 
     def unbooked(self, start, end):
         for i in range(start, end + 1):
-            self.status ^= (1 << i)
+            self.status &= ~(1 << i)
+        self.save()
+        return 0
 
     def __str__(self):
         return "%s of court %s in %s" % \
@@ -274,4 +277,3 @@ class ReserveRacket(models.Model):
 
     start = models.IntegerField()
     end = models.IntegerField()
-
