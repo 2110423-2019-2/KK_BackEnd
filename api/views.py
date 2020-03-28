@@ -442,7 +442,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
-        if request.user.username != court.owner and not request.user.is_staff:
+        if request.user.username != court.owner.username and not request.user.is_staff:
             return err_no_permission
         response = check_arguments(request.data, ['url'])
         if response[0] != 0:
