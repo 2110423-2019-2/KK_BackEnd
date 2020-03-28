@@ -334,7 +334,9 @@ class BookingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK
             )
         booking.user.extended.credit += refund
+        booking.user.extended.save()
         booking.court.owner.extended.credit -= refund
+        booking.court.owner.extended.save()
         booking.delete()
         return response
 
@@ -375,7 +377,9 @@ class CourtViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         user.extended.credit -= price
+        user.extended.save()
         court.owner.extended.credit += price
+        court.owner.extended.save()
         Booking.objects.create(user=user, day_of_the_week=day_of_the_week, court=court,
                                start=start, end=end, court_number=response[1], price=price)
         create_log(user=user, desc='User %s booked court %s'
