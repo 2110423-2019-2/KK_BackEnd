@@ -34,10 +34,20 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('url', 'timestamp',)
 
 
-class BookingSerializer(serializers.ModelSerializer):
+class RacketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Racket
+        fields = ('id', 'name', 'price', 'count',)
+
+
+class BookingSerializer(serializers.HyperlinkedModelSerializer):
+    rackets = RacketSerializer(
+        source='racket_bookings.racket', many=True
+    )
+
     class Meta:
         model = Booking
-        fields = ('id', 'day_of_the_week','price', 'start', 'end')
+        fields = ('id', 'day_of_the_week', 'court_number', 'price', 'start', 'end', 'racket')
 
 
 class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
@@ -72,7 +82,7 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('username', 'first_name', 'last_name',
                   'email', 'ban_list', 'is_verified',
                   'phone_number', 'credit', 'is_staff',
-                  'reviews', 'documents', 'bookings', )
+                  'reviews', 'documents', 'bookings',)
 
 
 class ShuttlecockSerializer(serializers.ModelSerializer):
@@ -103,9 +113,3 @@ class UserDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'documents')
-
-
-class RacketSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Racket
-        fields = ('id', 'name', 'price', 'count',)
