@@ -77,7 +77,7 @@ class Court(models.Model):
         return 1
 
     def book(self, day_of_the_week, start, end):
-        if self.check_collision(self, day_of_the_week, start, end) != 0:
+        if self.check_collision( day_of_the_week, start, end) != 0:
             return 1, -1
         for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
             if schedule.book(start, end) == 0:
@@ -129,12 +129,17 @@ class Racket(models.Model):
         return 1
 
     def book(self, day_of_the_week, start, end):
-        if self.check_collision(self, day_of_the_week, start, end) != 0:
+        if self.check_collision(day_of_the_week, start, end) != 0:
             return 1
         schedule = self.schedules.get(day_of_the_week=day_of_the_week)
         if schedule.book(start, end) == 0:
             return 0
         return 1
+
+    def unbooked(self, day_of_the_week, start, end):
+        schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+        schedule.unbooked(start, end)
+        return 0
 
     def __str__(self):
         return self.name
@@ -238,7 +243,6 @@ class Shuttlecock(models.Model):
     count_per_unit = models.IntegerField(validators=[MinValueValidator(0), ])
     count = models.IntegerField(validators=[MinValueValidator(0), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
-    remaining = models.IntegerField()
     court = models.ForeignKey(
         Court,
         related_name='shuttlecocks',

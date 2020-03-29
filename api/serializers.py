@@ -67,7 +67,7 @@ class BookingSerializer(serializers.ModelSerializer):
 class RacketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Racket
-        fields = ('id', 'name', 'price', )
+        fields = ('id', 'name', 'price' )
 
 
 class ShuttlecockSerializer(serializers.ModelSerializer):
