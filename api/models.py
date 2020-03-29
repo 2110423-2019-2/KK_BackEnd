@@ -129,7 +129,7 @@ class Racket(models.Model):
         return 1
 
     def book(self, day_of_the_week, start, end):
-        if self.check_collision(self, day_of_the_week, start, end) != 0:
+        if self.check_collision(day_of_the_week, start, end) != 0:
             return 1
         schedule = self.schedules.get(day_of_the_week=day_of_the_week)
         if schedule.book(start, end) == 0:
