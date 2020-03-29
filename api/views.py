@@ -395,7 +395,9 @@ class BookingViewSet(viewsets.ModelViewSet):
         racket.court.owner.extended.credit += price
         racket.court.owner.save()
         RacketBooking.objects.create(user=request.user, racket=racket,
-                                     booking=booking, price=price)
+                                     booking=booking, price=price,
+                                     day_of_the_week=day_of_the_week,
+                                     start=start, end=end)
         create_log(user=request.user, desc='User %s Reserved Racket %s'
                                            % (request.user.username, racket.name,))
         return Response(
