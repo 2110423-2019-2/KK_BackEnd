@@ -210,7 +210,6 @@ class Schedule(models.Model):
         return "%s of court %s in %s" % \
                (self.day_of_the_week, self.court_number, self.court)
 
-
     class Meta:
         unique_together = (('court', 'court_number', 'day_of_the_week', 'racket'),)
 
