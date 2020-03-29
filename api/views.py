@@ -340,6 +340,74 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.delete()
         return response
 
+    @action(detail=True, methods=['GET'], )
+    def get_racket(self, request, pk=None):
+        try:
+            booking = Booking.objects.get(id=pk)
+            court = booking.court
+        except:
+            return err_not_found
+        return Response(RacketSerializer(court.rackets.all(), many=True).data,
+                        status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], )
+    def get_shuttlecock(self, request, pk=None):
+        try:
+            booking = Booking.objects.get(id=pk)
+            court = booking.court
+        except:
+            return err_not_found
+        return Response(ShuttlecockSerializer
+                        (court.shuttlecocks.all(), many=True).data,
+                        status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['POST'], )
+    def reserve_racket(self, request, pk=None):
+        response = check_arguments(request.data, ['racket_id', 'start', 'end', 'day_of_the_week'])
+        if response[0] != 0:
+            return response[1]
+
+        try:
+            booking = Booking.objects.get(id=pk)
+            court = booking.court
+            racket_id = request.data['racket_id']
+            racket = court.rackets.get(id=racket_id)
+        except:
+            return err_not_found
+
+        start = request.data['start']
+        end = request.data['end']
+        day_of_the_week = request.data['day_of_the_week']
+
+        if request.user.extended.credit < racket.price:
+            return Response(
+                {'message': 'not enough credit'},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+        if racket.check_collision(day_of_the_week, start, end) != 0:
+            return Response(
+                {'message': 'racket is not free'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        response = racket.book(day_of_the_week, start, end)
+        if response[0] != 0:
+            return Response(
+                {'message': 'racket could not be booked'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        price = racket.price*(end-start+1)/2
+        request.user.extended.credit -= price
+        request.user.save()
+        racket.court.owner.extended.credit += price
+        racket.court.owner.save()
+        ReserveRacket.objects.create(user=request.user, racket=racket, price=price)
+        create_log(user=request.user, desc='User %s Reserved Racket %s'
+                                           % (request.user.username, racket.name,))
+        return Response(
+            {'message': 'racket has been reserved'},
+            status=status.HTTP_200_OK,
+        )
+
 
 class CourtViewSet(viewsets.ModelViewSet):
     queryset = Court.objects.all()
@@ -584,90 +652,4 @@ class CourtViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK)
 
 
-class RacketViewSet(viewsets.ModelViewSet):
-    queryset = Racket.objects.all()
-    serializer_class = RacketSerializer
 
-    def list(self, request):
-        queryset = Racket.objects.all()
-        serializer_class = RacketSerializer
-        return Response(serializer_class(queryset, many=True).data,
-                        status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['POST'], )
-    def reserve(self, request, pk=None):
-        try:
-            racket = Racket.objects.get(id=pk)
-        except:
-            return err_not_found
-        if request.user.extended.credit < racket.price:
-            return Response(
-                {'message': 'not enough credit'},
-                status=status.HTTP_402_PAYMENT_REQUIRED,
-            )
-        user.extended.credit -= price
-        court.owner.extended.credit += price
-        ReserveRacket.objects.create(user=user, racket=court.racket, price=price, count=count)
-        create_log(user=user, desc='User %s Reserved Racket %s'
-                                   % (user.username, court.racket.name,))
-        return Response(
-            {'message': 'racket has been reserved'},
-            status=status.HTTP_200_OK,
-        )
-
-
-class ShuttlecockViewSet(viewsets.ModelViewSet):
-    queryset = Shuttlecock.objects.all()
-    serializer_class = ShuttlecockSerializer
-
-    def list(self, request):
-        queryset = Shuttlecock.objects.all()
-        serializer_class = ShuttlecockSerializer
-        return Response(serializer_class(queryset, many=True).data,
-                        status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['POST'], )
-    def buy(self, request, pk=None):
-        response = check_arguments(request.data, ['count_per_unit', 'count'])
-        if response[0] != 0:
-            return response[1]
-
-        count_per_unit = request.data['count_per_unit']
-        count = request.data['count']
-        price = count * count_per_unit
-        user = request.user
-        try:
-            court = Court.objects.get(name=pk)
-        except:
-            return err_not_found
-        if user.extended.credit < price:
-            return Response(
-                {'message': 'not enough credit'},
-                status=status.HTTP_402_PAYMENT_REQUIRED,
-            )
-        if court.Shuttlecock.remaining - count <= 0:
-            return Response({'message': 'not enough shuttlecock'},
-                            status=status.HTTP_400_BAD_REQUEST,
-                            )
-        user.extended.credit -= price
-        court.Shuttlecock.remaining -= count
-        court.owner.extended.credit += price
-        create_log(user=user, desc='User %s Buy Shuttlecock %s '
-                                   % (user.username, count))
-        return Response(
-            {'message': 'shuttlecock has been bought'},
-            status=status.HTTP_200_OK,
-        )
-        if response[0] != 0:
-            return Response(
-                {'message': 'court could not be booked'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-        user.extended.credit -= price
-        court.owner.extended.credit += price
-        create_log(user=user, desc='User %s buy %s shuttlecock'
-                                   % (user.username, count,))
-        return Response(
-            {'message': 'court has been booked'},
-            status=status.HTTP_200_OK,
-        )
