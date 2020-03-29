@@ -102,11 +102,44 @@ class Booking(models.Model):
     price = models.IntegerField(validators=[MinValueValidator(0), ])
 
 
+class Racket(models.Model):
+    name = models.CharField(max_length=30)
+    price = models.IntegerField(validators=[MinValueValidator(0), ])
+    court = models.ForeignKey(
+        Court,
+        related_name='rackets',
+        on_delete=models.CASCADE,
+    )
+
+    def check_collision(self, day_of_the_week, start, end):
+        schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+        if schedule.check_collision(start, end) == 0:
+            return 0
+        return 1
+
+    def book(self, day_of_the_week, start, end):
+        schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+        if schedule.book(start, end) == 0:
+            return 0
+        return 1
+
+    def __str__(self):
+        return self.name
+
+
 class Schedule(models.Model):
     court = models.ForeignKey(
         Court,
         on_delete=models.CASCADE,
-        related_name='schedules'
+        related_name='schedules',
+        blank=True
+    )
+
+    racket = models.ForeignKey(
+        Racket,
+        on_delete=models.CASCADE,
+        related_name='schedules',
+        blank=True
     )
 
     class Day(models.IntegerChoices):
@@ -121,7 +154,7 @@ class Schedule(models.Model):
     day_of_the_week = models.IntegerField(choices=Day.choices)
     status = models.IntegerField(default=0)
     last_update = models.DateTimeField(auto_now_add=True)
-    court_number = models.IntegerField(blank=False)
+    court_number = models.IntegerField(blank=True)
 
     def update(self):
         dist = timezone.localtime(timezone.now()).weekday() \
@@ -185,19 +218,6 @@ class Review(models.Model):
 
     def __str__(self):
         return "%s review %s" % (self.user, self.court,)
-
-
-class Racket(models.Model):
-    name = models.CharField(max_length=30)
-    price = models.IntegerField(validators=[MinValueValidator(0), ])
-    court = models.ForeignKey(
-        Court,
-        related_name='rackets',
-        on_delete=models.CASCADE,
-    )
-
-    def __str__(self):
-        return self.name
 
 
 class Shuttlecock(models.Model):
@@ -272,7 +292,6 @@ class ReserveRacket(models.Model):
     )
     reserve_date = models.DateTimeField(auto_now=True)
 
-    count = models.IntegerField(validators=[MinValueValidator(0), ])
-
+    day_of_the_week = models.IntegerField()
     start = models.IntegerField()
     end = models.IntegerField()
