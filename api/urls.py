@@ -9,8 +9,6 @@ router.register('log', LogViewSet)
 router.register('court', CourtViewSet)
 router.register('document', DocumentViewSet)
 router.register('booking', BookingViewSet)
-router.register('racket', RacketViewSet)
-router.register('shuttlecock', ShuttlecockViewSet)
 urlpatterns = [
     path('', include(router.urls)),
 ]
