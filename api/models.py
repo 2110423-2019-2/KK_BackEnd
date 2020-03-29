@@ -318,6 +318,7 @@ class ShuttlecockBooking(models.Model):
         on_delete=models.CASCADE,
         related_name='shuttlecock_bookings'
     )
+    reserve_date = models.DateTimeField(auto_now=True)
     price = models.IntegerField(validators=[MinValueValidator(0), ])
     count = models.IntegerField(validators=[MinValueValidator(0), ])
 
