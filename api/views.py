@@ -341,7 +341,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return response
 
     @action(detail=True, methods=['GET'], )
-    def get_racket(self, request, pk=None):
+    def get_rackets(self, request, pk=None):
         try:
             booking = Booking.objects.get(id=pk)
             court = booking.court
@@ -351,7 +351,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['GET'], )
-    def get_shuttlecock(self, request, pk=None):
+    def get_shuttlecocks(self, request, pk=None):
         try:
             booking = Booking.objects.get(id=pk)
             court = booking.court
@@ -363,39 +363,36 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], )
     def reserve_racket(self, request, pk=None):
-        response = check_arguments(request.data, ['racket_id', 'start', 'end', 'day_of_the_week'])
+        response = check_arguments(request.data, ['id', ])
         if response[0] != 0:
             return response[1]
 
         try:
             booking = Booking.objects.get(id=pk)
             court = booking.court
-            racket_id = request.data['racket_id']
+            racket_id = request.data['id']
             racket = court.rackets.get(id=racket_id)
         except:
             return err_not_found
 
-        start = request.data['start']
-        end = request.data['end']
-        day_of_the_week = request.data['day_of_the_week']
+        start = booking.start
+        end = booking.end
+        day_of_the_week = booking.day_of_the_week
+        price = racket.price * (end - start + 1) / 2
 
-        if request.user.extended.credit < racket.price:
+        if request.user.extended.credit < price:
             return Response(
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
-        if racket.check_collision(day_of_the_week, start, end) != 0:
+
+        response = racket.book(day_of_the_week, start, end)
+        if response[0] != 0:
             return Response(
                 {'message': 'racket is not free'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        response = racket.book(day_of_the_week, start, end)
-        if response[0] != 0:
-            return Response(
-                {'message': 'racket could not be booked'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-        price = racket.price*(end-start+1)/2
+
         request.user.extended.credit -= price
         request.user.save()
         racket.court.owner.extended.credit += price
@@ -406,6 +403,50 @@ class BookingViewSet(viewsets.ModelViewSet):
                                            % (request.user.username, racket.name,))
         return Response(
             {'message': 'racket has been reserved'},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['POST'], )
+    def buy_shuttlecock(self, request, pk=None):
+        response = check_arguments(request.data, ['id', 'count'])
+        if response[0] != 0:
+            return response[1]
+
+        try:
+            booking = Booking.objects.get(id=pk)
+            court = booking.court
+            shuttlecock_id = request.data['id']
+            shuttlecock = court.shuttlecocks.get(id=shuttlecock_id)
+        except:
+            return err_not_found
+
+        count = request.data['count']
+
+        price = shuttlecock.price * count
+
+        if request.user.extended.credit < price:
+            return Response(
+                {'message': 'not enough credit'},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+        if shuttlecock.count < count:
+            return Response(
+                {'message': 'Not enough items in the stock'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        shuttlecock.court -= count
+        shuttlecock.save()
+
+        request.user.extended.credit -= price
+        request.user.save()
+        shuttlecock.court.owner.extended.credit += price
+        shuttlecock.court.owner.save()
+        ShuttlecockBooking.objects.create(user=request.user, shuttlecock=shuttlecock,
+                                          booking=booking, price=price)
+        create_log(user=request.user, desc='User %s Reserved Racket %s'
+                                           % (request.user.username, shuttlecock.name,))
+        return Response(
+            {'message': 'shuttlecock has been successfully bought'},
             status=status.HTTP_200_OK,
         )
 
@@ -434,16 +475,11 @@ class CourtViewSet(viewsets.ModelViewSet):
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
-        if court.check_collision(day_of_the_week, start, end) != 0:
-            return Response(
-                {'message': 'court is not free'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         response = court.book(day_of_the_week, start, end)
         if response[0] != 0:
             return Response(
-                {'message': 'court could not be booked'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {'message': 'court is not free'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         user.extended.credit -= price
         user.extended.save()
@@ -569,10 +605,6 @@ class CourtViewSet(viewsets.ModelViewSet):
         except:
             court = Court.objects.create(owner=user, price=price, name=name,
                                          desc=desc, lat=lat, long=long, court_count=count, )
-            for i in range(0, count):
-                for day in range(0, 7):
-                    Schedule.objects.create(court=court, court_number=i,
-                                            day_of_the_week=day, )
             create_log(
                 user=user,
                 desc='User %s create court %s' % (user.username, name,))
@@ -651,6 +683,3 @@ class CourtViewSet(viewsets.ModelViewSet):
         serializer_class = CourtSerializer
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
-
-
-
