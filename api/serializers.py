@@ -34,20 +34,42 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('url', 'timestamp',)
 
 
-class RacketSerializer(serializers.ModelSerializer):
+class RacketBookingSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = Racket
-        fields = ('id', 'name', 'price', 'count',)
+        model = RacketBooking
+        fields = ('id', 'name', 'price')
 
 
-class BookingSerializer(serializers.HyperlinkedModelSerializer):
-    rackets = RacketSerializer(
+class ShuttlecockBookingSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = ShuttlecockBooking
+        fields = ('id', 'name', 'price', 'count', 'count_per_unit')
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    rackets = RacketBookingSerializer(
         source='racket_bookings.racket', many=True
+    )
+    shuttlecocks = ShuttlecockBookingSerializer(
+        source='shuttlecock_bookings.shuttlecock', many=True
     )
 
     class Meta:
         model = Booking
-        fields = ('id', 'day_of_the_week', 'court_number', 'price', 'start', 'end', 'racket')
+        fields = ('id', 'day_of_the_week', 'court_number', 'price',
+                  'start', 'end', 'racket_bookings', 'shuttlecock_bookings')
+
+
+class RacketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Racket
+        fields = ('id', 'name', 'price', )
+
+
+class ShuttlecockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shuttlecock
+        fields = ('id', 'name', 'count_per_unit', 'count')
 
 
 class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
@@ -83,12 +105,6 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
                   'email', 'ban_list', 'is_verified',
                   'phone_number', 'credit', 'is_staff',
                   'reviews', 'documents', 'bookings',)
-
-
-class ShuttlecockSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Shuttlecock
-        fields = ('id', 'name', 'count_per_unit', 'count')
 
 
 class ImageSerializer(serializers.ModelSerializer):
