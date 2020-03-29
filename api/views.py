@@ -420,7 +420,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         except:
             return err_not_found
 
-        count = request.data['count']
+        count = int(request.data['count'])
 
         price = shuttlecock.price * count
 
@@ -434,7 +434,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {'message': 'Not enough items in the stock'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        shuttlecock.court -= count
+        shuttlecock.count -= count
         shuttlecock.save()
 
         request.user.extended.credit -= price
@@ -583,9 +583,129 @@ class CourtViewSet(viewsets.ModelViewSet):
                 image.delete()
                 return err_invalid_input
 
-    # TODO add rackets and shuttlecocks
-    # TODO top up shuttlecocks
+    # TODO racket
+    @action(detail=True, methods=['POST'], )
+    def add_racket(self, request, pk=None):
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if request.user.username != court.owner.username and not request.user.is_staff:
+            return err_no_permission
+        response = check_arguments(request.data, ['name','price'])
+        if response[0] != 0:
+            return response[1]
 
+        name = request.data['name']
+        price = request.data['price']
+        try:
+            Racket.objects.get(name=name)
+            return Response(
+                {'message': 'An racket with the same name already exists'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except:
+            try:
+                racket = Racket.objects.create(name=name,price=price,court=court)
+                
+                racket.full_clean()
+                create_log(user=request.user,
+                           desc='User %s add a new racket : %s to court %s'
+                                % (request.user.username, name, court.name,))
+                serializer_class = RacketSerializer
+                return Response(
+                    {
+                        'message': 'The racket has been added',
+                        'result': serializer_class(racket, many=False).data
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except:
+                racket.delete()
+                return err_invalid_input
+
+    # TODO add shuttlecocks
+    @action(detail=True, methods=['POST'], )
+    def add_shuttlecock(self, request, pk=None):
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if request.user.username != court.owner.username and not request.user.is_staff:
+            return err_no_permission
+        response = check_arguments(request.data, ['name','count_per_unit','count','price'])
+        if response[0] != 0:
+            return response[1]
+
+        name = request.data['name']
+        count_per_unit = request.data['count_per_unit']
+        count = request.data['count']
+        price = request.data['price']
+        try:
+            Shuttlecock.objects.get(name=name)
+            return Response(
+                {'message': 'An shuttlecock with the same name already exists'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except:
+            try:
+                shuttlecock = Shuttlecock.objects.create(name=name,count_per_unit=count_per_unit,count=count,price=price,court=court)
+                
+                shuttlecock.full_clean()
+                create_log(user=request.user,
+                           desc='User %s add a new shuttlecock : %s to court %s'
+                                % (request.user.username, name, court.name,))
+                serializer_class = ShuttlecockSerializer
+                return Response(
+                    {
+                        'message': 'The shuttlecock has been added',
+                        'result': serializer_class(shuttlecock, many=False).data
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except:
+                shuttlecock.delete()
+                return err_invalid_input
+
+    # TODO top up shuttlecocks
+    @action(detail=True, methods=['POST'], )
+    def topup_shuttlecock(self, request, pk=None):
+        try:
+            court = Court.objects.get(name=pk)
+        except:
+            return err_not_found
+        if request.user.username != court.owner.username and not request.user.is_staff:
+            return err_no_permission
+        response = check_arguments(request.data, ['name','count'])
+        if response[0] != 0:
+            return response[1]
+
+        name = request.data['name']
+        count =int(request.data['count'])
+        if(count<1):
+            return Response(
+                {'message': 'Can not top up with 0 or negative '},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+      
+       
+        try:
+            shuttlecock = Shuttlecock.objects.get(name=name)
+            shuttlecock.count +=count
+            shuttlecock.save()
+            create_log(user=request.user,
+                        desc='User %s top up shuttlecock : %s  to court %s'
+                            % (request.user.username, name, court.name,))
+
+            return Response(
+                {
+                    'message': 'The shuttlecock has been added',
+                },
+                status=status.HTTP_200_OK,
+            )
+        except:
+            return err_invalid_input
+    
     def create(self, request):
         response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', 'court_count'])
         if response[0] != 0:
@@ -689,4 +809,112 @@ class CourtViewSet(viewsets.ModelViewSet):
 
 
 # TODO create class to view and cancel racket bookings
+class RacketViewSet(viewsets.ModelViewSet):
+    queryset = Racket.objects.all()
+    serializer_class = RacketSerializer
+
+    def list(self):
+        return err_not_allowed
+
+    @action(detail=True, methods=['POST'], )
+    def cancel(self, request, pk=None):
+        user = request.user
+        try:
+            booking = RacketBooking.objects.get(id=pk)
+        except:
+            return err_not_found
+        if not user.is_staff and user != booking.user:
+            return err_not_allowed
+        price = booking.price
+        dist = timedelta(days=booking.day_of_the_week) - \
+               timedelta(days=timezone.localtime(timezone.now()).weekday())
+        if dist < timedelta(days=0):
+            dist += timedelta(days=7)
+        effective_date = booking.reserve_date + dist
+        effective_date.replace(hour=0, minute=0, second=0)
+        if timezone.localtime(timezone.now()) > effective_date:
+            # case 1: already past the date
+            return Response(
+                {'message': 'Already past cancellation time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        booking.racket.unbooked(start=booking.start,
+                               end=booking.end,
+                               day_of_the_week=booking.day_of_the_week)
+        if dist >= timedelta(days=0):
+            # case 2: before the date
+            refund = price
+            create_log(user=booking.user, desc='User %s got full refund' % booking.user.username)
+            response = Response(
+                {'message': 'A refund has been processed'},
+                status=status.HTTP_200_OK
+            )
+        else:
+            # case 3: at before the date
+            refund = 0
+            create_log(user=booking.user, desc='User %s got partial refund' % booking.user.username)
+            response = Response(
+                {'message': 'Cancellation has been processed but can not refund at a reserved date'},
+                status=status.HTTP_200_OK
+            )
+        booking.user.extended.credit += refund
+        booking.user.extended.save()
+        booking.racket.court.owner.extended.credit -= refund
+        booking.racket.court.owner.extended.save()
+        booking.delete()
+        return response
+    
+
 # TODO create class to view and cancel shuttlecock bookings
+class ShuttlecockViewSet(viewsets.ModelViewSet):
+    queryset = Shuttlecock.objects.all()
+    serializer_class = ShuttlecockSerializer
+
+    def list(self):
+        return err_not_allowed
+
+    @action(detail=True, methods=['POST'], )
+    def cancel(self, request, pk=None):
+        user = request.user
+        try:
+            booking = ShuttlecockBooking.objects.get(id=pk)
+        except:
+            return err_not_found
+        if not user.is_staff and user != booking.user:
+            return err_not_allowed
+        price = booking.price
+        dist = timedelta(days=booking.booking.day_of_the_week) - \
+               timedelta(days=timezone.localtime(timezone.now()).weekday())
+        if dist < timedelta(days=0):
+            dist += timedelta(days=7)
+        effective_date = booking.reserve_date + dist 
+        effective_date.replace(hour=0, minute=0, second=0)
+        if timezone.localtime(timezone.now()) > effective_date:
+            # case 1: already past the date
+            return Response(
+                {'message': 'Already past cancellation time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if dist >= timedelta(days=0):
+            # case 2: before the date
+            refund = price
+            create_log(user=booking.user, desc='User %s got full refund' % booking.user.username)
+            response = Response(
+                {'message': 'A refund has been processed'},
+                status=status.HTTP_200_OK
+            )
+        else:
+            # case 3: at before the date
+            refund = 0
+            create_log(user=booking.user, desc='User %s got partial refund' % booking.user.username)
+            response = Response(
+                {'message': 'Cancellation has been processed but can not refund at a reserved date'},
+                status=status.HTTP_200_OK
+            )
+        booking.user.extended.credit += refund
+        booking.user.extended.save()
+        booking.shuttlecock.court.owner.extended.credit -= refund
+        booking.shuttlecock.court.owner.extended.save()
+        booking.delete()
+        return response
+
