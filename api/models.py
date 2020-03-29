@@ -66,12 +66,19 @@ class Court(models.Model):
         return m_sum / len(reviews)
 
     def check_collision(self, day_of_the_week, start, end):
-        for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
+        for court_number in range(0, self.court_count):
+            try:
+                schedule = self.schedules.filter(day_of_the_week=day_of_the_week)
+            except:
+                schedule = Schedule.objects.create(court=self, court_number=court_number,
+                                                   day_of_the_week=day_of_the_week, )
             if schedule.check_collision(start, end) == 0:
                 return 0
         return 1
 
     def book(self, day_of_the_week, start, end):
+        if self.check_collision(self, day_of_the_week, start, end) != 0:
+            return 1, -1
         for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
             if schedule.book(start, end) == 0:
                 return 0, schedule.court_number
@@ -112,12 +119,18 @@ class Racket(models.Model):
     )
 
     def check_collision(self, day_of_the_week, start, end):
-        schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+        try:
+            schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+        except:
+            schedule = Schedule.objects.create(racket=self,
+                                               day_of_the_week=day_of_the_week)
         if schedule.check_collision(start, end) == 0:
             return 0
         return 1
 
     def book(self, day_of_the_week, start, end):
+        if self.check_collision(self, day_of_the_week, start, end) != 0:
+            return 1
         schedule = self.schedules.get(day_of_the_week=day_of_the_week)
         if schedule.book(start, end) == 0:
             return 0
