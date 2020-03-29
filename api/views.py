@@ -186,9 +186,6 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
 
-# TODO passwordRequestForm
-
-
 class LogViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserLogSerializer
@@ -582,6 +579,9 @@ class CourtViewSet(viewsets.ModelViewSet):
             except:
                 image.delete()
                 return err_invalid_input
+
+    # TODO add rackets and shuttlecocks
+    # TODO top up shuttlecocks
 
     def create(self, request):
         response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', 'court_count'])
