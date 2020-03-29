@@ -68,7 +68,7 @@ class Court(models.Model):
     def check_collision(self, day_of_the_week, start, end):
         for court_number in range(0, self.court_count):
             try:
-                schedule = self.schedules.filter(day_of_the_week=day_of_the_week)
+                schedule = self.schedules.get(day_of_the_week=day_of_the_week)
             except:
                 schedule = Schedule.objects.create(court=self, court_number=court_number,
                                                    day_of_the_week=day_of_the_week, )
@@ -77,7 +77,7 @@ class Court(models.Model):
         return 1
 
     def book(self, day_of_the_week, start, end):
-        if self.check_collision(self, day_of_the_week, start, end) != 0:
+        if self.check_collision(day_of_the_week, start, end) != 0:
             return 1, -1
         for schedule in self.schedules.filter(day_of_the_week=day_of_the_week):
             if schedule.book(start, end) == 0:
@@ -145,14 +145,16 @@ class Schedule(models.Model):
         Court,
         on_delete=models.CASCADE,
         related_name='schedules',
-        blank=True
+        blank=True,
+        null=True,
     )
 
     racket = models.ForeignKey(
         Racket,
         on_delete=models.CASCADE,
         related_name='schedules',
-        blank=True
+        blank=True,
+        null=True,
     )
 
     class Day(models.IntegerChoices):
@@ -167,7 +169,7 @@ class Schedule(models.Model):
     day_of_the_week = models.IntegerField(choices=Day.choices)
     status = models.BigIntegerField(default=0)
     last_update = models.DateTimeField(auto_now_add=True)
-    court_number = models.IntegerField(blank=True)
+    court_number = models.IntegerField(blank=True, null=True)
 
     def update(self):
         dist = timezone.localtime(timezone.now()).weekday() \
@@ -203,11 +205,14 @@ class Schedule(models.Model):
         return 0
 
     def __str__(self):
+        if self.court is None:
+            return "%s of racket %s" % (self.day_of_the_week, self.racket.name)
         return "%s of court %s in %s" % \
                (self.day_of_the_week, self.court_number, self.court)
 
+
     class Meta:
-        unique_together = (('court', 'court_number', 'day_of_the_week'),)
+        unique_together = (('court', 'court_number', 'day_of_the_week', 'racket'),)
 
 
 class Review(models.Model):
