@@ -152,7 +152,7 @@ class Schedule(models.Model):
         Sunday = 6
 
     day_of_the_week = models.IntegerField(choices=Day.choices)
-    status = models.IntegerField(default=0)
+    status = models.BigIntegerField(default=0)
     last_update = models.DateTimeField(auto_now_add=True)
     court_number = models.IntegerField(blank=True)
 
@@ -283,20 +283,41 @@ class RacketBooking(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='racket_booking'
+        related_name='racket_bookings'
     )
     racket = models.ForeignKey(
         Racket,
         on_delete=models.CASCADE,
-        related_name='racket_booking'
+        related_name='racket_bookings'
     )
     booking = models.ForeignKey(
         Booking,
         on_delete=models.CASCADE,
-        related_name='racket_booking'
+        related_name='racket_bookings'
     )
     reserve_date = models.DateTimeField(auto_now=True)
+    price = models.IntegerField(validators=[MinValueValidator(0), ])
+    day_of_the_week = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(6), ])
+    start = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(47), ])
+    end = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(47), ])
+    
+    
+class ShuttlecockBooking(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shuttlecock_bookings'
+    )
+    shuttlecock = models.ForeignKey(
+        Shuttlecock,
+        on_delete=models.CASCADE,
+        related_name='shuttlecock_bookings'
+    )
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='shuttlecock_bookings'
+    )
+    price = models.IntegerField(validators=[MinValueValidator(0), ])
+    count = models.IntegerField(validators=[MinValueValidator(0), ])
 
-    day_of_the_week = models.IntegerField()
-    start = models.IntegerField()
-    end = models.IntegerField()
