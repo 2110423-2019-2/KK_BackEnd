@@ -279,16 +279,21 @@ class Image(models.Model):
         return '%s %s' % (self.court.name, self.url,)
 
 
-class ReserveRacket(models.Model):
+class RacketBooking(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='reserveRacket'
+        related_name='racket_booking'
     )
     racket = models.ForeignKey(
         Racket,
         on_delete=models.CASCADE,
-        related_name='reserveRacket'
+        related_name='racket_booking'
+    )
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='racket_booking'
     )
     reserve_date = models.DateTimeField(auto_now=True)
 
