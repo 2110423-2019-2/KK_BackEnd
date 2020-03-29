@@ -342,5 +342,5 @@ class ShuttlecockBooking(models.Model):
     )
     reserve_date = models.DateTimeField(auto_now=True)
     price = models.IntegerField(validators=[MinValueValidator(0), ])
-    count = models.IntegerField(validators=[MinValueValidator(0), ])
+    count = models.IntegerField(validators=[MinValueValidator(0), ],null=True)
 

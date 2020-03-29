@@ -384,7 +384,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
 
         response = racket.book(day_of_the_week, start, end)
-        if response[0] != 0:
+        if response != 0:
             return Response(
                 {'message': 'racket is not free'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -417,7 +417,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         except:
             return err_not_found
 
-        count = request.data['count']
+        count = int(request.data['count'])
 
         price = shuttlecock.price * count
 
@@ -431,7 +431,7 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {'message': 'Not enough items in the stock'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        shuttlecock.court -= count
+        shuttlecock.count -= count
         shuttlecock.save()
 
         request.user.extended.credit -= price
@@ -880,11 +880,8 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
         if not user.is_staff and user != booking.user:
             return err_not_allowed
         price = booking.price
-        dist = timedelta(days=booking.day_of_the_week) - \
-               timedelta(days=timezone.localtime(timezone.now()).weekday())
-        if dist < timedelta(days=0):
-            dist += timedelta(days=7)
-        effective_date = booking.reserve_date + dist
+
+        effective_date = booking.reserve_date 
         effective_date.replace(hour=0, minute=0, second=0)
         if timezone.localtime(timezone.now()) > effective_date:
             # case 1: already past the date
