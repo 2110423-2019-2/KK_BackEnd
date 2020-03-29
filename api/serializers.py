@@ -74,10 +74,11 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
                   'phone_number', 'credit', 'is_staff',
                   'reviews', 'documents', 'bookings', )
 
+
 class ShuttlecockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shuttlecock
-        fields = ('name', 'count_per_unit', 'count')
+        fields = ('id', 'name', 'count_per_unit', 'count')
 
 
 class ImageSerializer(serializers.ModelSerializer):
