@@ -189,7 +189,6 @@ class Review(models.Model):
 
 class Racket(models.Model):
     name = models.CharField(max_length=30)
-    count = models.IntegerField(validators=[MinValueValidator(0), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
     court = models.ForeignKey(
         Court,

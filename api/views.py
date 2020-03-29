@@ -596,28 +596,15 @@ class RacketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], )
     def reserve(self, request, pk=None):
-        response = check_arguments(request.data, ['name', 'price', 'count'])
-        if response[0] != 0:
-            return response[1]
-
-        name = request.data['name']
-        price = request.data['price']
-        count = request.data['count']
-        user = request.user
         try:
-            court = Court.objects.get(name=pk)
-
+            racket = Racket.objects.get(id=pk)
         except:
             return err_not_found
-        if user.extended.credit < price:
+        if request.user.extended.credit < racket.price:
             return Response(
                 {'message': 'not enough credit'},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
-        if count <= 0:
-            return Response({'message': 'not have racket'},
-                            status=status.HTTP_400_BAD_REQUEST,
-                            )
         user.extended.credit -= price
         court.owner.extended.credit += price
         ReserveRacket.objects.create(user=user, racket=court.racket, price=price, count=count)
