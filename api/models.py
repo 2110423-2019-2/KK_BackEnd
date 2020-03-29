@@ -318,10 +318,7 @@ class RacketBooking(models.Model):
     )
     reserve_date = models.DateTimeField(auto_now=True)
     price = models.IntegerField(validators=[MinValueValidator(0), ])
-    day_of_the_week = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(6), ])
-    start = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(47), ])
-    end = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(47), ])
-    
+
     
 class ShuttlecockBooking(models.Model):
     user = models.ForeignKey(
@@ -340,7 +337,6 @@ class ShuttlecockBooking(models.Model):
         related_name='shuttlecock_bookings'
     )
     reserve_date = models.DateTimeField(auto_now=True)
-    day_of_the_week = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(6), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
     count = models.IntegerField(validators=[MinValueValidator(0), ],null=True)
 

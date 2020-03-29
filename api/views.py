@@ -344,7 +344,10 @@ class BookingViewSet(viewsets.ModelViewSet):
             court = booking.court
         except:
             return err_not_found
-        return Response(RacketSerializer(court.rackets.all(), many=True).data,
+        rackets = [racket for racket in court.rackets.all()
+                   if racket.check_collision(
+                booking.day_of_the_week, booking.start, booking.end) == 0]
+        return Response(RacketSerializer(rackets, many=True).data,
                         status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['GET'], )
@@ -395,9 +398,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         racket.court.owner.extended.credit += price
         racket.court.owner.save()
         RacketBooking.objects.create(user=request.user, racket=racket,
-                                     booking=booking, price=price,
-                                     day_of_the_week=day_of_the_week,
-                                     start=start, end=end)
+                                     booking=booking, price=price, )
         create_log(user=request.user, desc='User %s Reserved Racket %s'
                                            % (request.user.username, racket.name,))
         return Response(
