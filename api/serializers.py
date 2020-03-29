@@ -35,25 +35,29 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class RacketBookingSerializer(serializers.HyperlinkedModelSerializer):
+    name = serializers.CharField(
+        source='racket.name'
+    )
+
     class Meta:
         model = RacketBooking
         fields = ('id', 'name', 'price')
 
 
 class ShuttlecockBookingSerializer(serializers.HyperlinkedModelSerializer):
+    name = serializers.CharField(
+        source='shuttlecock.name'
+    )
+    count_per_unit = serializers.CharField(
+        source='shuttlecock.count_per_unit'
+    )
+
     class Meta:
         model = ShuttlecockBooking
         fields = ('id', 'name', 'price', 'count', 'count_per_unit')
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    rackets = RacketBookingSerializer(
-        source='racket_bookings.racket', many=True
-    )
-    shuttlecocks = ShuttlecockBookingSerializer(
-        source='shuttlecock_bookings.shuttlecock', many=True
-    )
-
     class Meta:
         model = Booking
         fields = ('id', 'day_of_the_week', 'court_number', 'price',
