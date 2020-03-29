@@ -395,7 +395,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         racket.court.owner.extended.credit += price
         racket.court.owner.save()
         RacketBooking.objects.create(user=request.user, racket=racket,
-                                     booking=booking, price=price)
+                                     booking=booking, price=price,start=start
+                                     end=end,day_of_the_week =day_of_the_week)
         create_log(user=request.user, desc='User %s Reserved Racket %s'
                                            % (request.user.username, racket.name,))
         return Response(
@@ -439,7 +440,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         shuttlecock.court.owner.extended.credit += price
         shuttlecock.court.owner.save()
         ShuttlecockBooking.objects.create(user=request.user, shuttlecock=shuttlecock,
-                                          booking=booking, price=price)
+                                          booking=booking, price=price,
+                                          day_of_the_week =booking.day_of_the_week)
         create_log(user=request.user, desc='User %s Reserved Racket %s'
                                            % (request.user.username, shuttlecock.name,))
         return Response(
@@ -880,8 +882,11 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
         if not user.is_staff and user != booking.user:
             return err_not_allowed
         price = booking.price
-
-        effective_date = booking.reserve_date 
+        dist = timedelta(days=booking.day_of_the_week) - \
+               timedelta(days=timezone.localtime(timezone.now()).weekday())
+        if dist < timedelta(days=0):
+            dist += timedelta(days=7)
+        effective_date = booking.reserve_date + dist 
         effective_date.replace(hour=0, minute=0, second=0)
         if timezone.localtime(timezone.now()) > effective_date:
             # case 1: already past the date

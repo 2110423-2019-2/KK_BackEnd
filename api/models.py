@@ -340,6 +340,7 @@ class ShuttlecockBooking(models.Model):
         related_name='shuttlecock_bookings'
     )
     reserve_date = models.DateTimeField(auto_now=True)
+    day_of_the_week = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(6), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
     count = models.IntegerField(validators=[MinValueValidator(0), ],null=True)
 
