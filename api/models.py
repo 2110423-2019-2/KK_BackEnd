@@ -136,6 +136,11 @@ class Racket(models.Model):
             return 0
         return 1
 
+    def unbooked(self, day_of_the_week, start, end):
+        schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+        schedule.unbooked(start, end)
+        return 0
+
     def __str__(self):
         return self.name
 
@@ -242,7 +247,6 @@ class Shuttlecock(models.Model):
     count_per_unit = models.IntegerField(validators=[MinValueValidator(0), ])
     count = models.IntegerField(validators=[MinValueValidator(0), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
-    remaining = models.IntegerField()
     court = models.ForeignKey(
         Court,
         related_name='shuttlecocks',
@@ -336,6 +340,7 @@ class ShuttlecockBooking(models.Model):
         related_name='shuttlecock_bookings'
     )
     reserve_date = models.DateTimeField(auto_now=True)
+    day_of_the_week = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(6), ])
     price = models.IntegerField(validators=[MinValueValidator(0), ])
-    count = models.IntegerField(validators=[MinValueValidator(0), ])
+    count = models.IntegerField(validators=[MinValueValidator(0), ],null=True)
 
