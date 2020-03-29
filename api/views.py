@@ -384,7 +384,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
 
         response = racket.book(day_of_the_week, start, end)
-        if response[0] != 0:
+        if response != 0:
             return Response(
                 {'message': 'racket is not free'},
                 status=status.HTTP_400_BAD_REQUEST,
