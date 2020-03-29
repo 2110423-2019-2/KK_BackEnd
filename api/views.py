@@ -683,3 +683,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         serializer_class = CourtSerializer
         return Response(serializer_class(queryset, many=True).data,
                         status=status.HTTP_200_OK)
+
+
+# TODO create class to view and cancel racket bookings
+# TODO create class to view and cancel shuttlecock bookings
