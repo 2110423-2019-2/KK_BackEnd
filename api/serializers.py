@@ -120,11 +120,11 @@ class ImageSerializer(serializers.ModelSerializer):
 class CourtSerializer(serializers.ModelSerializer):
     owner = UserSerializer(many=False)
     images = ImageSerializer(many=True)
-
+    reviews = ReviewSerializer(many=True)
     class Meta:
         model = Court
         fields = ('id', 'name', 'price', 'owner', 'desc',
-                  'rating_count', 'avg_score', 'images', 'court_count', 'is_verified', 'lat', 'long')
+                  'rating_count', 'avg_score','reviews', 'images', 'court_count', 'is_verified', 'lat', 'long')
 
 
 class UserDocumentSerializer(serializers.ModelSerializer):
