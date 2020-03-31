@@ -310,13 +310,29 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {'message': 'Already past cancellation time'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        refund = 0
         booking.court.unbooked(court_number=booking.court_number,
                                start=booking.start,
                                end=booking.end,
                                day_of_the_week=booking.day_of_the_week)
+        racketSet = RacketBooking.objects.filter(booking=booking)
+        for book in racketSet:
+            book.racket.unbooked(start=book.booking.start,
+                                 end=book.booking.end,
+                                 day_of_the_week=book.booking.day_of_the_week)
+            if dist >= timedelta(days=0):
+                # case : before the date
+                refund += book.price
+            book.delete()
+        shuttlecokSet = ShuttlecockBooking.objects.filter(booking=booking)
+        for book in shuttlecokSet:
+            if dist >= timedelta(days=0):
+                # case : before the date
+                refund += book.price
+            book.delete()
         if dist >= timedelta(days=3):
             # case 2: at least 3 days before the date
-            refund = price
+            refund += price
             create_log(user=booking.user, desc='User %s got full refund' % booking.user.username)
             response = Response(
                 {'message': 'A full refund has been processed'},
@@ -324,7 +340,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
         else:
             # case 3: 1-2 days before the date
-            refund = price / 2
+            refund += price / 2
             create_log(user=booking.user, desc='User %s got partial refund' % booking.user.username)
             response = Response(
                 {'message': 'A partial refund has been processed'},
