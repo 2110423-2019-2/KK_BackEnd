@@ -805,7 +805,7 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         if rackets_count > 0:
             if start < 0 or end < 0 or day_of_the_week < 0:
-                return Response({'message': 'Please provide day_of_the_week, start and end time slot'},
+                return Response({'message': 'Please provide day_of_the_week, start_time and end_time'},
                                 status=status.HTTP_400_BAD_REQUEST)
             queryset = [court for court in queryset if
                         len([racket for racket in court.rackets.all() if
