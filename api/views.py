@@ -782,6 +782,8 @@ class CourtViewSet(viewsets.ModelViewSet):
         day_of_the_week = request.GET.get('day_of_the_week', -1)
         start = request.GET.get('start_time', -1)
         end = request.GET.get('end_time', -1)
+        rackets_count = int(request.GET.get('rackets_count', 0))
+        shuttlecocks_count = int(request.GET.get('shuttlecocks_count', 0))
 
         if max_dist > -1 or sort_by == 'dist' or sort_by == '-dist':
             response = check_arguments(request.GET, ['lat', 'long', ])
@@ -803,6 +805,15 @@ class CourtViewSet(viewsets.ModelViewSet):
         if max_dist != -1:
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
+
+        if rackets_count > 0:
+            queryset = [court for court in queryset if
+                        len([racket for racket in court.rackets if racket.check_collision(start, end) == 0])
+                        >= rackets_count]
+
+        if shuttlecocks_count > 0:
+            queryset = [court for court in queryset if
+                        sum(court.shuttlecocks.count) >= shuttlecocks_count]
 
         if day_of_the_week != -1 and start != -1 and end != -1:
             queryset = [court for court in queryset if
