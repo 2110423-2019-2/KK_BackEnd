@@ -93,7 +93,7 @@ class RacketSerializer(serializers.ModelSerializer):
 class ShuttlecockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shuttlecock
-        fields = ('id', 'name', 'count_per_unit', 'count')
+        fields = ('id', 'name', 'count_per_unit', 'count', 'price')
 
 
 class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):

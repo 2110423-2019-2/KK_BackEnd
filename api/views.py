@@ -501,12 +501,12 @@ class CourtViewSet(viewsets.ModelViewSet):
         user.extended.save()
         court.owner.extended.credit += price
         court.owner.extended.save()
-        Booking.objects.create(user=user, day_of_the_week=day_of_the_week, court=court,
+        booking = Booking.objects.create(user=user, day_of_the_week=day_of_the_week, court=court,
                                start=start, end=end, court_number=response[1], price=price)
         create_log(user=user, desc='User %s booked court %s'
                                    % (user.username, court.name,))
         return Response(
-            {'message': 'court has been booked'},
+            {'message': 'court has been booked', "booking_id": booking.id},
             status=status.HTTP_200_OK,
         )
 
@@ -849,7 +849,8 @@ class RacketViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
         user = request.user
         try:
-            booking = RacketBooking.objects.get(id=pk)
+            racketBooking = RacketBooking.objects.get(id=pk)
+            booking = racketBooking.booking
         except:
             return err_not_found
         if not user.is_staff and user != booking.user:
@@ -859,7 +860,7 @@ class RacketViewSet(viewsets.ModelViewSet):
                timedelta(days=timezone.localtime(timezone.now()).weekday())
         if dist < timedelta(days=0):
             dist += timedelta(days=7)
-        effective_date = booking.reserve_date + dist
+        effective_date = booking.booked_date + dist
         effective_date.replace(hour=0, minute=0, second=0)
         if timezone.localtime(timezone.now()) > effective_date:
             # case 1: already past the date
@@ -867,7 +868,7 @@ class RacketViewSet(viewsets.ModelViewSet):
                 {'message': 'Already past cancellation time'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        booking.racket.unbooked(start=booking.start,
+        racketBooking.racket.unbooked(start=booking.start,
                                end=booking.end,
                                day_of_the_week=booking.day_of_the_week)
         if dist >= timedelta(days=0):
@@ -888,9 +889,9 @@ class RacketViewSet(viewsets.ModelViewSet):
             )
         booking.user.extended.credit += refund
         booking.user.extended.save()
-        booking.racket.court.owner.extended.credit -= refund
-        booking.racket.court.owner.extended.save()
-        booking.delete()
+        racketBooking.racket.court.owner.extended.credit -= refund
+        racketBooking.racket.court.owner.extended.save()
+        racketBooking.delete()
         return response
     
 
