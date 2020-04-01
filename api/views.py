@@ -806,7 +806,10 @@ class CourtViewSet(viewsets.ModelViewSet):
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
 
-        if rackets_count > 0 and start > 0 and end > 0:
+        if rackets_count > 0:
+            if start < 0 or end < 0 or day_of_the_week < 0:
+                return Response({'message': 'Please provide day_of_the_week, start and end time slot'},
+                                status=status.HTTP_400_BAD_REQUEST)
             queryset = [court for court in queryset if
                         len([racket for racket in court.rackets.all() if
                              racket.check_collision(day_of_the_week, start, end) == 0])
