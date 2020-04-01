@@ -35,6 +35,8 @@ CC-BE is a backend server stack for the courtcatch project using Django REST Fra
 	GET	/api/log/
 	GET	/api/log/<username>/
 	GET	/api/court?name=<name>&rating=<min_rating>&dist=<max_dist>&lat=<lat>&long=<long>&sort_by=<name|-name|dist|rating>
+	GET /api/court?rackets_count=<count>&end_time=<end>&start_time=<start>&day_of_the_week=<day_of_the_week>
+	GET /api/court?shuttlecocks_count=<count>
 	POST	/api/court/
 	GET	/api/court/<courtname>/
 	POST	/api/court/<courtname>/rate_court/

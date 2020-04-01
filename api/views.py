@@ -599,7 +599,6 @@ class CourtViewSet(viewsets.ModelViewSet):
                 image.delete()
                 return err_invalid_input
 
-    # TODO racket
     @action(detail=True, methods=['POST'], )
     def add_racket(self, request, pk=None):
         try:
@@ -640,7 +639,6 @@ class CourtViewSet(viewsets.ModelViewSet):
                 racket.delete()
                 return err_invalid_input
 
-    # TODO add shuttlecocks
     @action(detail=True, methods=['POST'], )
     def add_shuttlecock(self, request, pk=None):
         try:
@@ -683,7 +681,6 @@ class CourtViewSet(viewsets.ModelViewSet):
                 shuttlecock.delete()
                 return err_invalid_input
 
-    # TODO top up shuttlecocks
     @action(detail=True, methods=['POST'], )
     def topup_shuttlecock(self, request, pk=None):
         try:
