@@ -789,12 +789,12 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         if not request.user.is_staff:
             queryset = Court.objects.exclude(
-                owner__extended__ban_list__contains=request.user)
+                owner__extended__ban_list__id__icontains=request.user.id)
 
         queryset = queryset.filter(is_verified=True)
 
         if name != '':
-            queryset = queryset.filter(name__contains=name)
+            queryset = queryset.filter(name__icontains=name)
 
         if min_rating != -1:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
@@ -804,13 +804,18 @@ class CourtViewSet(viewsets.ModelViewSet):
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
 
         if rackets_count > 0:
+            if start < 0 or end < 0 or day_of_the_week < 0:
+                return Response({'message': 'Please provide day_of_the_week, start and end time slot'},
+                                status=status.HTTP_400_BAD_REQUEST)
             queryset = [court for court in queryset if
-                        len([racket for racket in court.rackets if racket.check_collision(start, end) == 0])
+                        len([racket for racket in court.rackets.all() if
+                             racket.check_collision(day_of_the_week, start, end) == 0])
                         >= rackets_count]
 
         if shuttlecocks_count > 0:
             queryset = [court for court in queryset if
-                        sum(court.shuttlecocks.count) >= shuttlecocks_count]
+                        sum([shuttlecock.count for shuttlecock in
+                             court.shuttlecocks.all()]) >= shuttlecocks_count]
 
         if day_of_the_week != -1 and start != -1 and end != -1:
             queryset = [court for court in queryset if
