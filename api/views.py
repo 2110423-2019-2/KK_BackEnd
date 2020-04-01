@@ -806,14 +806,16 @@ class CourtViewSet(viewsets.ModelViewSet):
             queryset = [court for court in queryset if
                         (court.lat - lat) ** 2 + (court.long - long) ** 2 <= max_dist ** 2]
 
-        if rackets_count > 0:
+        if rackets_count > 0 and start > 0 and end > 0:
             queryset = [court for court in queryset if
-                        len([racket for racket in court.rackets if racket.check_collision(start, end) == 0])
+                        len([racket for racket in court.rackets.all() if
+                             racket.check_collision(day_of_the_week, start, end) == 0])
                         >= rackets_count]
 
         if shuttlecocks_count > 0:
             queryset = [court for court in queryset if
-                        sum(court.shuttlecocks.count) >= shuttlecocks_count]
+                        sum([shuttlecock.count for shuttlecock in
+                             court.shuttlecocks.all()]) >= shuttlecocks_count]
 
         if day_of_the_week != -1 and start != -1 and end != -1:
             queryset = [court for court in queryset if
