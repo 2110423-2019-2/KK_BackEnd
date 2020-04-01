@@ -797,7 +797,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(is_verified=True)
 
         if name != '':
-            queryset = queryset.filter(name__contains=name)
+            queryset = queryset.filter(name__icontains=name)
 
         if min_rating != -1:
             queryset = [court for court in queryset if court.avg_score() >= min_rating]
