@@ -57,10 +57,29 @@ class ShuttlecockBookingSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'name', 'price', 'count', 'count_per_unit')
 
 
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Image
+        fields = ('url', 'timestamp')
+
+
+class CourtSerializer(serializers.ModelSerializer):
+    owner = UserSerializer(many=False)
+    images = ImageSerializer(many=True)
+    reviews = ReviewSerializer(many=True)
+
+    class Meta:
+        model = Court
+        fields = ('id', 'name', 'price', 'owner', 'desc',
+                  'rating_count', 'avg_score', 'reviews', 'images', 'court_count', 'is_verified', 'lat', 'long')
+
+
 class BookingSerializer(serializers.ModelSerializer):
+    court = CourtSerializer(many=False)
+
     class Meta:
         model = Booking
-        fields = ('id', 'day_of_the_week', 'court_number', 'is_active', 'price',
+        fields = ('id', 'day_of_the_week', 'court', 'court_number', 'is_active', 'price',
                   'start', 'end', 'racket_bookings', 'shuttlecock_bookings')
 
 
@@ -109,23 +128,6 @@ class ExtendedUserSerializer(serializers.HyperlinkedModelSerializer):
                   'email', 'ban_list', 'is_verified',
                   'phone_number', 'credit', 'is_staff',
                   'reviews', 'documents', 'bookings',)
-
-
-class ImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Image
-        fields = ('url', 'timestamp')
-
-
-class CourtSerializer(serializers.ModelSerializer):
-    owner = UserSerializer(many=False)
-    images = ImageSerializer(many=True)
-    reviews = ReviewSerializer(many=True)
-
-    class Meta:
-        model = Court
-        fields = ('id', 'name', 'price', 'owner', 'desc',
-                  'rating_count', 'avg_score','reviews', 'images', 'court_count', 'is_verified', 'lat', 'long')
 
 
 class UserDocumentSerializer(serializers.ModelSerializer):
