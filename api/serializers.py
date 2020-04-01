@@ -76,7 +76,8 @@ class CourtSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     court = CourtSerializer(many=False)
-
+    racket_bookings =RacketBookingSerializer(many=True)
+    shuttlecock_bookings =ShuttlecockBookingSerializer(many=True)
     class Meta:
         model = Booking
         fields = ('id', 'day_of_the_week', 'court', 'court_number', 'is_active', 'price',
