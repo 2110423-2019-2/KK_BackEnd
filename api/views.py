@@ -792,7 +792,7 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         if not request.user.is_staff:
             queryset = Court.objects.exclude(
-                owner__extended__ban_list__contains=request.user)
+                owner__extended__ban_list__id__icontains=request.user.id)
 
         queryset = queryset.filter(is_verified=True)
 
