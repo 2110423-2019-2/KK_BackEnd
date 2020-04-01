@@ -58,16 +58,16 @@ class ShuttlecockBookingSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    def is_active(self):
-        day0 = self.booked_date.replace(hour=0, minute=0, second=0)
-        dist = self.day_of_the_week - day0.weekday()
+    def get_is_active(self, obj):
+        day0 = obj.booked_date.replace(hour=0, minute=0, second=0)
+        dist = obj.day_of_the_week - day0.weekday()
         if dist < 0:
             dist += 7
         dist += 1
-        cut_off_day = day0 + dist
+        cut_off_day = day0 + timedelta(days=dist)
         return timezone.localtime(timezone.now()) < cut_off_day
 
-    is_active = serializers.SerializerMethodField('is_active')
+    is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
