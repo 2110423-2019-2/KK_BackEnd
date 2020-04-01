@@ -776,7 +776,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         lat = float(request.GET.get('lat', -1))
         long = float(request.GET.get('long', -1))
         sort_by = request.GET.get('sort_by', 'name')
-        day_of_the_week = request.GET.get('day_of_the_week', -1)
+        day_of_the_week = int(request.GET.get('day_of_the_week', -1))
         start = request.GET.get('start_time', -1)
         end = request.GET.get('end_time', -1)
         rackets_count = int(request.GET.get('rackets_count', 0))
