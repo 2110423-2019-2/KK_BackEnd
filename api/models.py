@@ -108,6 +108,16 @@ class Booking(models.Model):
     end = models.IntegerField()
     price = models.IntegerField(validators=[MinValueValidator(0), ])
 
+    @property
+    def is_active(self):
+        day0 = self.booked_date.replace(hour=0, minute=0, second=0)
+        dist = self.day_of_the_week - day0.weekday()
+        if dist < 0:
+            dist += 7
+        dist += 1
+        cut_off_day = day0 + timedelta(days=dist)
+        return timezone.localtime(timezone.now()) < cut_off_day
+
 
 class Racket(models.Model):
     name = models.CharField(max_length=30)
