@@ -58,9 +58,20 @@ class ShuttlecockBookingSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
+    def is_active(self):
+        day0 = self.booked_date.replace(hour=0, minute=0, second=0)
+        dist = self.day_of_the_week - day0.weekday()
+        if dist < 0:
+            dist += 7
+        dist += 1
+        cut_off_day = day0 + dist
+        return timezone.localtime(timezone.now()) < cut_off_day
+
+    is_active = serializers.SerializerMethodField('is_active')
+
     class Meta:
         model = Booking
-        fields = ('id', 'day_of_the_week', 'court_number', 'price',
+        fields = ('id', 'day_of_the_week', 'court_number', 'is_active', 'price',
                   'start', 'end', 'racket_bookings', 'shuttlecock_bookings')
 
 
@@ -121,6 +132,7 @@ class CourtSerializer(serializers.ModelSerializer):
     owner = UserSerializer(many=False)
     images = ImageSerializer(many=True)
     reviews = ReviewSerializer(many=True)
+
     class Meta:
         model = Court
         fields = ('id', 'name', 'price', 'owner', 'desc',
