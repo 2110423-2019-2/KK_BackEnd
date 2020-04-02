@@ -6,6 +6,8 @@ from rest_framework.authtoken.models import Token
 
 from .serializers import *
 
+from .stt import sample_recognize
+
 err_invalid_input = Response(
     {'message': 'Cannot create user, please recheck input fields'},
     status=status.HTTP_400_BAD_REQUEST,
@@ -899,6 +901,19 @@ class RacketViewSet(viewsets.ModelViewSet):
 class ShuttlecockViewSet(viewsets.ModelViewSet):
     queryset = Shuttlecock.objects.all()
     serializer_class = ShuttlecockSerializer
+
+    def create(self, request):
+        response = check_arguments(request.data, [
+            'url'
+        ])
+
+        url = request.data['url']
+
+        transcript = sample_recognize(url)
+        return Response(
+                {'transcript': transcript},
+                status=status.HTTP_200_OK
+            )
 
     def list(self):
         return err_not_allowed
