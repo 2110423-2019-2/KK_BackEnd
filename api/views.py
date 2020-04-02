@@ -329,6 +329,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             if dist >= timedelta(days=0):
                 # case : before the date
                 refund += book.price
+                book.shuttlecock.count += book.count
+                book.shuttlecock.save()
             book.delete()
         if dist >= timedelta(days=3):
             # case 2: at least 3 days before the date
@@ -458,7 +460,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         shuttlecock.court.owner.extended.credit += price
         shuttlecock.court.owner.save()
         ShuttlecockBooking.objects.create(user=request.user, shuttlecock=shuttlecock,
-                                          booking=booking, price=price)
+                                          booking=booking,count=count, price=price)
         create_log(user=request.user, desc='User %s Reserved Racket %s'
                                            % (request.user.username, shuttlecock.name,))
         return Response(
@@ -614,7 +616,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         name = request.data['name']
         price = request.data['price']
         try:
-            Racket.objects.get(name=name)
+            Racket.objects.get(name=name,court=court)
             return Response(
                 {'message': 'An racket with the same name already exists'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -653,7 +655,7 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         name = request.data['name']
         count_per_unit = request.data['count_per_unit']
-        count = request.data['count']
+        count =int( request.data['count'])
         price = request.data['price']
         try:
             Shuttlecock.objects.get(name=name)
@@ -689,11 +691,11 @@ class CourtViewSet(viewsets.ModelViewSet):
             return err_not_found
         if request.user.username != court.owner.username and not request.user.is_staff:
             return err_no_permission
-        response = check_arguments(request.data, ['name','count'])
+        response = check_arguments(request.data, ['id','count'])
         if response[0] != 0:
             return response[1]
 
-        name = request.data['name']
+        id = request.data['id']
         count =int(request.data['count'])
         if(count<1):
             return Response(
@@ -703,12 +705,12 @@ class CourtViewSet(viewsets.ModelViewSet):
       
        
         try:
-            shuttlecock = Shuttlecock.objects.get(name=name)
+            shuttlecock = Shuttlecock.objects.get(id=id)
             shuttlecock.count +=count
             shuttlecock.save()
             create_log(user=request.user,
-                        desc='User %s top up shuttlecock : %s  to court %s'
-                            % (request.user.username, name, court.name,))
+                        desc='User %s top up shuttlecock   to court %s'
+                            % (request.user.username, court.name,))
 
             return Response(
                 {
@@ -940,6 +942,8 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
                 {'message': 'Cancellation has been processed but can not refund at a reserved date'},
                 status=status.HTTP_200_OK
             )
+        booking.shuttlecock.count += booking.count
+        booking.shuttlecock.save()
         booking.user.extended.credit += refund
         booking.user.extended.save()
         booking.shuttlecock.court.owner.extended.credit -= refund
