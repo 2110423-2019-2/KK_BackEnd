@@ -5,9 +5,27 @@ import sys
 import os
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:\\Users\\Nack\\Desktop\\cc-be\\api\\speech_auth.json"
 import urllib.request
+from pydub import AudioSegment
 
+def checkDir():
+    path = os.path.abspath("./user_speech/")
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-def sample_recognize(url):
+def convert(abs_file_path):
+    sound = AudioSegment.from_file(abs_file_path)
+    sound = sound.set_channels(1)
+    sound = sound.set_sample_width(2)
+    sound = sound.set_frame_rate(48000)
+
+    abs_out_file_path = abs_file_path[:-4] + ".wav"
+
+    sound.export(abs_out_file_path, format="wav")
+
+    return abs_out_file_path
+
+def sample_recognize(url, username):
+    checkDir()
     """
     Transcribe a short audio file using synchronous speech recognition
 
@@ -20,15 +38,16 @@ def sample_recognize(url):
     url = "https://stupidz.s3-ap-southeast-1.amazonaws.com/nicotineN.wav"
     local_file_path = "C:\\Users\\non_s\\Desktop\\nonnon.wav" '''
     ##########################
-    local_file_path = "temp.wav"
+    local_file_path = os.path.abspath("./user_speech/"+username+"_temp.weba")
 
     urllib.request.urlretrieve(url, local_file_path)
+    local_file_path = convert(local_file_path)
     client = speech_v1.SpeechClient()
 
     # The language of the supplied audio
     language_code = "th-TH"
     # Sample rate in Hertz of the audio data sent
-    sample_rate_hertz = 44100
+    sample_rate_hertz = 48000
     # Encoding of audio data sent. This sample sets this explicitly.
     # This field is optional for FLAC and WAV audio formats.
     encoding = enums.RecognitionConfig.AudioEncoding.LINEAR16
@@ -41,10 +60,10 @@ def sample_recognize(url):
         content = f.read()
     audio = {"content": content}
     response = client.recognize(config, audio)
-    out = "";
+    out = ""
     for result in response.results:
         # First alternative is the most probable result
-        # alternative = result.alternatives[0]
+        alternative = result.alternatives[0]
         # print(u"{}".format(alternative.transcript))
         out += u"{}".format(alternative.transcript)
     return out

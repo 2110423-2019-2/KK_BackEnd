@@ -904,12 +904,13 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
 
     def create(self, request):
         response = check_arguments(request.data, [
-            'url'
+            'url','username'
         ])
 
         url = request.data['url']
+        username = request.data['username']
 
-        transcript = sample_recognize(url)
+        transcript = sample_recognize(url, username)
         return Response(
                 {'transcript': transcript},
                 status=status.HTTP_200_OK
