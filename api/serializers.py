@@ -31,7 +31,7 @@ class UserLogSerializer(serializers.ModelSerializer):
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ('url', 'timestamp',)
+        fields = ('timestamp',)
 
 
 class RacketBookingSerializer(serializers.HyperlinkedModelSerializer):

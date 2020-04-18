@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator, \
     MinValueValidator, MaxValueValidator
 from django.utils import timezone
-
+from django.core.validators import RegexValidator
 
 class ExtendedUser(models.Model):
     is_verified = models.BooleanField(default=False)
@@ -226,7 +226,7 @@ class Schedule(models.Model):
                (self.day_of_the_week, self.court_number, self.court)
 
     class Meta:
-        unique_together = (('court', 'court_number', 'day_of_the_week', 'racket'),)
+        unique_together = (('court', 'court_number', 'day_of_the_week', 'racket', ),)
 
 
 class Review(models.Model):
@@ -285,7 +285,24 @@ class Log(models.Model):
 
 
 class Document(models.Model):
-    url = models.URLField()
+    thai_first_name = models.CharField(max_length=30)
+    thai_last_name = models.CharField(max_length=30)
+    date_of_birth = models.DateField(null=True, editable=False)
+    cid = models.CharField(validators=[RegexValidator(
+            regex='^[0-9]{13}$', 
+            message="cid must be 13 digits number",
+            code="nomatch"
+        )], max_length=13)
+    cbid = models.CharField(max_length=12, validators=[RegexValidator(
+            regex='^.{12}$',
+            message='codes behind ID card must have 12 characters.',
+            code="nomatch"
+        )]) 
+    current_occupation = models.CharField(max_length=30)
+    residential_address = models.CharField(max_length=200)
+    registered_address = models.CharField(max_length=200)
+    holding_cid_url = models.URLField()
+    ic_url = models.URLField()
     user = models.ForeignKey(
         User,
         related_name='documents',
@@ -294,7 +311,7 @@ class Document(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, blank=True, )
 
     def __str__(self):
-        return '%s %s' % (self.user.username, self.url,)
+        return '%s' % (self.user.username,)
 
 
 class Image(models.Model):

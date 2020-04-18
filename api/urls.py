@@ -11,6 +11,8 @@ router.register('document', DocumentViewSet)
 router.register('booking', BookingViewSet)
 router.register('shuttlecock', ShuttlecockViewSet)
 router.register('racket', RacketViewSet)
+
 urlpatterns = [
     path('', include(router.urls)),
+    path('speech/', Speech.as_view()),
 ]

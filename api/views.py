@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework.views import APIView
 
 from .serializers import *
 
@@ -151,8 +152,8 @@ class UserViewSet(viewsets.ModelViewSet):
         response = check_arguments(request.data, ['amount'])
         if response[0] != 0:
             return response[1]
-        if not request.user.is_staff:
-            return err_no_permission
+        # if not request.user.is_staff:
+        #     return err_no_permission
 
         amount = int(request.data['amount'])
         if amount < 0:
@@ -224,31 +225,47 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
 
     def create(self, request):
-        response = check_arguments(request.data, ['url'])
+            
+        response = check_arguments(request.data, ['thai_first_name', 'thai_last_name',
+            'date_of_birth', 'cid', 'cbid', 'current_occupation', 'residential_address', 'registered_address',
+            'holding_cid_url', 'ic_url'])
         if response[0] != 0:
             return response[1]
 
-        url = request.data['url']
+        thai_first_name = request.data['thai_first_name']
+        thai_last_name = request.data['thai_last_name']
+        date_of_birth = request.data['date_of_birth']
+        cid = request.data['cid']
+        cbid = request.data['cbid']
+        current_occupation = request.data['current_occupation']
+        residential_address = request.data['residential_address']
+        registered_address = request.data['registered_address']
+        holding_cid_url = request.data['holding_cid_url']
+        ic_url = request.data['ic_url']
+
         user = request.user
         try:
-            Document.objects.get(url=url)
+            Document.objects.get(cid=cid)
             return Response(
-                {'message': 'A document with the same url already exists'},
+                {'message': 'A document with the same cid already exists'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except:
             pass
         try:
-            document = Document.objects.create(user=user, url=url)
+            document = Document.objects.create(user=user, thai_first_name=thai_first_name, thai_last_name=thai_last_name,
+                date_of_birth=date_of_birth, cid=cid, cbid=cbid, current_occupation=current_occupation,
+                residential_address=residential_address, registered_address=registered_address,
+                holding_cid_url=holding_cid_url, ic_url=ic_url)
             document.full_clean()
             create_log(
                 user=user,
-                desc='User %s has upload a document url: %s'
-                     % (user.username, url,),
+                desc='User %s has submitted a provider form.'
+                     % (user.username,),
             )
             return Response(
                 {
-                    'message': 'The document has been uploaded',
+                    'message': 'The provider form has been submitted.',
                     'result': DocumentSerializer(document, many=False).data,
                 },
                 status=status.HTTP_200_OK
@@ -306,6 +323,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             dist += timedelta(days=7)
         effective_date = booking.booked_date + dist
         effective_date.replace(hour=0, minute=0, second=0)
+        print(effective_date)
+        print(timezone.now())
         if timezone.localtime(timezone.now()) > effective_date:
             # case 1: already past the date
             return Response(
@@ -489,7 +508,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
-        price = court.price * (end - start + 1) / 2
+        price = court.price * (end - start) / 2
         if user.extended.credit < price:
             return Response(
                 {'message': 'not enough credit'},
@@ -905,18 +924,7 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
     serializer_class = ShuttlecockSerializer
 
     def create(self, request):
-        response = check_arguments(request.data, [
-            'url','username'
-        ])
-
-        url = request.data['url']
-        username = request.data['username']
-
-        transcript = sample_recognize(url, username)
-        return Response(
-                {'transcript': transcript},
-                status=status.HTTP_200_OK
-            )
+        return err_not_allowed
 
     def list(self):
         return err_not_allowed
@@ -968,3 +976,17 @@ class ShuttlecockViewSet(viewsets.ModelViewSet):
         booking.delete()
         return response
 
+class Speech(APIView):
+    def post(self, request, format=None):
+        response = check_arguments(request.data, [
+            'url','username'
+        ])
+
+        url = request.data['url']
+        username = request.data['username']
+
+        transcript = sample_recognize(url, username)
+        return Response(
+                {'transcript': transcript},
+                status=status.HTTP_200_OK
+            )
