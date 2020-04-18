@@ -225,7 +225,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
 
     def create(self, request):
-            
+        
         response = check_arguments(request.data, ['thai_first_name', 'thai_last_name',
             'date_of_birth', 'cid', 'cbid', 'current_occupation', 'residential_address', 'registered_address',
             'holding_cid_url', 'ic_url'])
@@ -402,7 +402,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], )
     def reserve_racket(self, request, pk=None):
-        response = check_arguments(request.data, ['id', ])
+        response = check_arguments(request.data, ['id',])
         if response[0] != 0:
             return response[1]
 
@@ -417,7 +417,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         start = booking.start
         end = booking.end
         day_of_the_week = booking.day_of_the_week
-        price = racket.price * (end - start + 1) / 2
+        price = racket.price * (end - start) / 2
 
         if request.user.extended.credit < price:
             return Response(
@@ -433,9 +433,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
 
         request.user.extended.credit -= price
-        request.user.save()
+        request.user.extended.save()
         racket.court.owner.extended.credit += price
-        racket.court.owner.save()
+        racket.court.owner.extended.save()
         RacketBooking.objects.create(user=request.user, racket=racket,
                                      booking=booking, price=price, )
         create_log(user=request.user, desc='User %s Reserved Racket %s'
@@ -878,7 +878,7 @@ class RacketViewSet(viewsets.ModelViewSet):
             return err_not_found
         if not user.is_staff and user != booking.user:
             return err_not_allowed
-        price = booking.price
+        price = racketBooking.price
         dist = timedelta(days=booking.day_of_the_week) - \
                timedelta(days=timezone.localtime(timezone.now()).weekday())
         if dist < timedelta(days=0):
@@ -912,8 +912,10 @@ class RacketViewSet(viewsets.ModelViewSet):
             )
         booking.user.extended.credit += refund
         booking.user.extended.save()
-        racketBooking.racket.court.owner.extended.credit -= refund
-        racketBooking.racket.court.owner.extended.save()
+        # racketBooking.racket.court.owner.extended.credit -= refund
+        # racketBooking.racket.court.owner.extended.save()
+        booking.court.owner.extended.credit -= refund
+        booking.court.owner.extended.save()
         racketBooking.delete()
         return response
     
