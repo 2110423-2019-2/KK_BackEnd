@@ -68,11 +68,13 @@ class Court(models.Model):
     def check_collision(self, day_of_the_week, start, end):
         for court_number in range(0, self.court_count):
             try:
-                schedule = self.schedules.get(day_of_the_week=day_of_the_week)
+                schedule = self.schedules.get(day_of_the_week=day_of_the_week, court_number=court_number)
             except:
                 schedule = Schedule.objects.create(court=self, court_number=court_number,
                                                    day_of_the_week=day_of_the_week, )
+            print(court_number, schedule)
             if schedule.check_collision(start, end) == 0:
+                print("pass")
                 return 0
         return 1
 
@@ -114,9 +116,14 @@ class Booking(models.Model):
         dist = self.day_of_the_week - day0.weekday()
         if dist < 0:
             dist += 7
-        dist += 1
+        # dist += 1
         cut_off_day = day0 + timedelta(days=dist)
-        return timezone.localtime(timezone.now()) < cut_off_day
+        lc = timezone.localtime(timezone.now())
+        if ( lc < cut_off_day ): 
+            return True
+        elif ( lc.date() == cut_off_day.date() and (lc.hour*2)+(lc.minute >= 30) < self.start ):
+            return True
+        return False
 
 
 class Racket(models.Model):
