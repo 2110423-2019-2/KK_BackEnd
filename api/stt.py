@@ -3,7 +3,7 @@ from google.cloud.speech_v1 import enums
 import io
 import sys
 import os
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:\\Users\\Nack\\Desktop\\cc-be\\api\\speech_auth.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]=os.getcwd()+"/api/speech_auth.json"
 import urllib.request
 from pydub import AudioSegment
 

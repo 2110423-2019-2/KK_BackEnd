@@ -508,6 +508,15 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
+
+        lc = timezone.localtime(timezone.now())
+
+        if ( day_of_the_week == lc.weekday() and (lc.hour*2)+(lc.minute >= 30) > start):
+            return Response(
+                {'message': 'time is already passed'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if ( court.start > start or court.end < end ):
             return Response(
                 {'message': 'court is closed at that time'},
