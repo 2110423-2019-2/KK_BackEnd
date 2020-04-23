@@ -45,6 +45,8 @@ class Court(models.Model):
         on_delete=models.CASCADE,
         related_name='courts',
     )
+    open = models.IntegerField(validators=[MinValueValidator(0), ])
+    close = models.IntegerField(validators=[MinValueValidator(0), ])
     lat = models.FloatField()
     long = models.FloatField()
     name = models.CharField(max_length=30)

@@ -71,7 +71,7 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = ('id', 'name', 'price', 'owner', 'desc',
-                  'rating_count', 'avg_score', 'reviews', 'images', 'court_count', 'is_verified', 'lat', 'long')
+                  'rating_count', 'avg_score', 'reviews', 'images', 'court_count', 'is_verified', 'lat', 'long', 'open', 'close')
 
 
 class BookingSerializer(serializers.ModelSerializer):

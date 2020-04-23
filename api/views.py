@@ -508,6 +508,11 @@ class CourtViewSet(viewsets.ModelViewSet):
             court = Court.objects.get(name=pk)
         except:
             return err_not_found
+        if ( court.start > start or court.end < end ):
+            return Response(
+                {'message': 'court is closed at that time'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         price = court.price * (end - start) / 2
         if user.extended.credit < price:
             return Response(
@@ -743,7 +748,7 @@ class CourtViewSet(viewsets.ModelViewSet):
             return err_invalid_input
     
     def create(self, request):
-        response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', 'court_count'])
+        response = check_arguments(request.data, ['name', 'price', 'desc', 'lat', 'long', 'court_count', 'open', 'close'])
         if response[0] != 0:
             return response[1]
 
@@ -754,6 +759,14 @@ class CourtViewSet(viewsets.ModelViewSet):
         lat = float(request.data['lat'])
         long = float(request.data['long'])
         count = int(request.data['court_count'])
+        open = int(request.data['open'])
+        close = int(request.data['close'])
+
+        if ( open < 0 or close < 0 or open > 48 or close > 48 or close <= open or price < 0 ):
+            return Response(
+                {'message': 'request has invalid fields'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             Court.objects.get(name=name)
@@ -763,7 +776,8 @@ class CourtViewSet(viewsets.ModelViewSet):
             )
         except:
             court = Court.objects.create(owner=user, price=price, name=name,
-                                         desc=desc, lat=lat, long=long, court_count=count, )
+                                         desc=desc, lat=lat, long=long, court_count=count,
+                                         open=open, close=close )
             create_log(
                 user=user,
                 desc='User %s create court %s' % (user.username, name,))
@@ -843,6 +857,9 @@ class CourtViewSet(viewsets.ModelViewSet):
         if day_of_the_week != -1 and start != -1 and end != -1:
             queryset = [court for court in queryset if
                         court.check_collision(day_of_the_week, start, end) == 0]
+
+        queryset = [court for court in queryset if court.open <= start and court.close >= end]
+
         reverse = False
         if sort_by[0] == '-':
             reverse = True
