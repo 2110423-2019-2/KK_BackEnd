@@ -517,7 +517,7 @@ class CourtViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if ( court.start > start or court.end < end ):
+        if ( court.open > start or court.close < end ):
             return Response(
                 {'message': 'court is closed at that time'},
                 status=status.HTTP_400_BAD_REQUEST,
