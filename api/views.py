@@ -40,6 +40,20 @@ def check_arguments(request_arr, args):
         return 1, Response(response, status=status.HTTP_400_BAD_REQUEST)
     return 0,
 
+def check_string_len(arr):
+    # [[name, value, limit],...]
+    string_len_exceed_max = []
+    for name, value, limit in arr:
+        if len(value) > limit:
+            string_len_exceed_max.append(name)
+    if string_len_exceed_max:
+        response = {
+            'Arguments exceeding string length limit': '%s' % ', '.join(string_len_exceed_max),
+        }
+        return 1, Response(response, status=status.HTTP_400_BAD_REQUEST)
+    return 0,
+
+
 
 def create_log(user, desc):
     Log.objects.create(user=user, desc=desc)
@@ -69,6 +83,15 @@ class UserViewSet(viewsets.ModelViewSet):
         last_name = request.data['last_name']
         email = request.data['email']
         phone_number = request.data['phone_number']
+
+        response = check_string_len([
+            ['username', username, 151],
+            ['first_name', first_name, 31],
+            ['last_name', last_name, 31]
+        ])
+        if response[0] != 0:
+            return response[1]
+
         try:
             User.objects.get(username=username)
             return Response(
@@ -561,6 +584,10 @@ class CourtViewSet(viewsets.ModelViewSet):
         score = int(request.data['score'])
         review_text = request.data['review']
 
+        response = check_string_len(['review length', review_text, 200])
+        if response[0] != 0:
+            return response[1]
+
         if user == court.owner:
             return Response(
                 {'message': 'You cannot rate your own court'},
@@ -768,10 +795,11 @@ class CourtViewSet(viewsets.ModelViewSet):
         lat = float(request.data['lat'])
         long = float(request.data['long'])
         count = int(request.data['court_count'])
+        # open is a very bad name
         open = int(request.data['open'])
         close = int(request.data['close'])
 
-        if ( open < 0 or close < 0 or open > 48 or close > 48 or close <= open or price < 0 ):
+        if open < 0 or close < 0 or open > 48 or close > 48 or close <= open or price < 0:
             return Response(
                 {'message': 'request has invalid fields'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -818,6 +846,9 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         name = request.GET.get('name', '')
         min_rating = float(request.GET.get('rating', -1))
+        if min_rating > 5:
+            return Response({'message': 'minimum rating cannot exceed 5'},
+                            status=status.HTTP_400_BAD_REQUEST)
         max_dist = float(request.GET.get('dist', -1))
         lat = float(request.GET.get('lat', -1))
         long = float(request.GET.get('long', -1))
@@ -825,6 +856,9 @@ class CourtViewSet(viewsets.ModelViewSet):
         day_of_the_week = int(request.GET.get('day_of_the_week', -1))
         start = int(request.GET.get('start_time', -1))
         end = int(request.GET.get('end_time', -1))
+        if start > end:
+            return Response({'message': 'end time cannot precede start time'},
+                            status=status.HTTP_400_BAD_REQUEST)
         rackets_count = int(request.GET.get('rackets_count', 0))
         shuttlecocks_count = int(request.GET.get('shuttlecocks_count', 0))
 
