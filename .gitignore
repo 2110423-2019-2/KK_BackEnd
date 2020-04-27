@@ -6,4 +6,6 @@ Pipfile.lock
 **/__pycache__/**
 db.sqlite3
 
+api/speech_auth.json
+
 user_speech
